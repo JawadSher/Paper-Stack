@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Share, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getBoard, getClassLevel, getSubjectById } from "@/components/browse/browseData";
+import { NetworkError } from "@/components/common/NetworkError";
 import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { BoardBadge } from "@/components/papers/BoardBadge";
 import { QuestionsList } from "@/components/questions/QuestionsList";
@@ -17,6 +18,7 @@ import { boards } from "@/constants/boards";
 import { subjects } from "@/constants/subjects";
 import { colors } from "@/constants/theme";
 import { useCommonQuestions, type MinFrequency } from "@/hooks/useCommonQuestions";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { usePaperStackStore } from "@/store";
 import type { ClassLevel } from "@/types";
 
@@ -48,6 +50,7 @@ export default function CommonQuestionsBySubjectScreen() {
   const [selectedBoardId, setSelectedBoardId] = useState(routeBoardId ?? selectedPreferenceBoard);
   const [selectedClass, setSelectedClass] = useState<ClassLevel | undefined>(initialClass);
   const [minFrequency, setMinFrequency] = useState<MinFrequency>(2);
+  const { isConnected } = useNetworkStatus();
   const baseSubject = getSubjectById(subjectId);
   const sameNameSubjects = useMemo(
     () => subjects.filter((subject) => subject.name === baseSubject?.name),
@@ -67,6 +70,14 @@ export default function CommonQuestionsBySubjectScreen() {
   } = useCommonQuestions(resolvedSubject?.id, selectedBoardId, resolvedClass, minFrequency);
   const showBoardSelector = !routeBoardId;
   const showClassToggle = sameNameSubjects.length > 1;
+
+  if (!isLoading && !isConnected && questions.length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+        <NetworkError onRetry={() => setMinFrequency(2)} />
+      </SafeAreaView>
+    );
+  }
 
   const shareSummary = async () => {
     const subjectName = resolvedSubject?.name ?? "Subject";

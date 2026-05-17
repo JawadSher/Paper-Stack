@@ -14,6 +14,7 @@ import { Typography } from "@/components/ui/Typography";
 import { boards } from "@/constants/boards";
 import { formatBytes } from "@/components/downloads/StorageUsageBar";
 import { useDownloads } from "@/hooks/useDownloads";
+import { useToast } from "@/components/common/Toast";
 import { usePaperStackStore } from "@/store";
 import type { ClassLevel, TextSizePreference } from "@/types";
 
@@ -31,7 +32,9 @@ export default function ProfileScreen() {
   const setSelectedClass = usePaperStackStore((state) => state.setSelectedClass);
   const setTheme = usePaperStackStore((state) => state.setTheme);
   const setTextSize = usePaperStackStore((state) => state.setTextSize);
-  const bookmarkCount = usePaperStackStore((state) => state.bookmarkedPaperIds.size);
+  const clearDownloads = usePaperStackStore((state) => state.clearDownloads);
+  const bookmarkCount = usePaperStackStore((state) => state.bookmarkedPapers.size);
+  const { showToast } = useToast();
   const { downloadedPapers, totalSize } = useDownloads();
   const [boardSelectorVisible, setBoardSelectorVisible] = useState(false);
   const selectedBoardIds = preferences.selectedBoards?.length
@@ -48,12 +51,13 @@ export default function ProfileScreen() {
 
   const clearCache = async () => {
     try {
-      await FileSystem.deleteAsync(`${FileSystem.cacheDirectory}paperstack-share.txt`, {
+      await FileSystem.deleteAsync(`${FileSystem.documentDirectory}papers/`, {
         idempotent: true,
       });
-      Alert.alert("Cache cleared", "Temporary PaperStack cache files were cleared.");
+      clearDownloads();
+      showToast({ type: "success", title: "Cache cleared successfully" });
     } catch {
-      Alert.alert("Cache cleared", "Temporary PaperStack cache files were cleared.");
+      Alert.alert("Cache error", "PaperStack could not clear the download cache.");
     }
   };
 

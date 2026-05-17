@@ -13,22 +13,19 @@ import type { Paper } from "@/types";
 
 const historyKey = "paper-stack:paper-history";
 
-type HistoryEntry = Paper | { paper: Paper };
-
 function normalizeHistory(value: string | null): Paper[] {
   if (!value) {
     return [];
   }
 
   try {
-    const parsed = JSON.parse(value) as HistoryEntry[];
+    const parsed = JSON.parse(value) as Paper[];
 
     if (!Array.isArray(parsed)) {
       return [];
     }
 
     return parsed
-      .map((entry) => ("paper" in entry ? entry.paper : entry))
       .filter((paper): paper is Paper => Boolean(paper?.id && paper?.boardId && paper?.subjectId))
       .slice(0, 5);
   } catch {
@@ -79,10 +76,10 @@ export function ContinueBrowsing() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-3">
             {papers.map((paper) => {
-              const board = boardMap.get(paper.boardId) ?? boards[0];
+              const board = boardMap.get(paper.boardId);
               const subject = subjectMap.get(paper.subjectId);
 
-              return (
+              return board ? (
                 <PaperCard
                   key={paper.id}
                   paper={paper}
@@ -90,7 +87,7 @@ export function ContinueBrowsing() {
                   subject={subject}
                   variant="compactHorizontal"
                 />
-              );
+              ) : null;
             })}
           </View>
         </ScrollView>

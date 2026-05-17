@@ -38,7 +38,7 @@ function PaperCardComponent({
   onPress,
 }: PaperCardProps) {
   const router = useRouter();
-  const bookmarked = usePaperStackStore((state) => state.bookmarkedPaperIds.has(paper.id));
+  const bookmarked = usePaperStackStore((state) => state.bookmarkedPapers.has(paper.id));
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
 
   const openPaper = () => {
@@ -90,7 +90,7 @@ function PaperCardComponent({
           accessibilityRole="button"
           onPress={(event) => {
             event.stopPropagation();
-            toggleBookmark(paper.id);
+            toggleBookmark(paper.id, paper);
           }}
           className="h-10 w-10 items-center justify-center rounded-full bg-muted dark:bg-muted-dark"
         >

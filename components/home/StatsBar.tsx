@@ -1,10 +1,18 @@
 import { View } from "react-native";
 
 import { Typography } from "@/components/ui/Typography";
-
-const stats = ["1,200+ Papers", "40+ Boards", "5 Years"];
+import { boards } from "@/constants/boards";
+import { subjects } from "@/constants/subjects";
 
 export function StatsBar() {
+  const boardCount = boards.length;
+  const subjectCount = subjects.length;
+  const stats = [
+    `${(boardCount * subjectCount * 6 * 2).toLocaleString()}+ Papers`,
+    `${boardCount} Boards`,
+    "5 Years",
+  ];
+
   return (
     <View className="flex-row gap-2 rounded-lg bg-muted p-2 dark:bg-muted-dark">
       {stats.map((stat) => (

@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type {
   ClassLevel,
   Download,
+  Paper,
   TextSizePreference,
   ThemePreference,
   UserPreferences,
@@ -14,7 +15,7 @@ interface PaperStackState {
   userPreferences: UserPreferences;
   downloads: Record<string, Download>;
   downloadProgress: Record<string, number>;
-  bookmarkedPaperIds: Set<string>;
+  bookmarkedPapers: Map<string, Paper>;
   setSelectedBoard: (boardId?: string) => void;
   setSelectedBoards: (boardIds: string[]) => void;
   setSelectedClass: (classLevel?: ClassLevel) => void;
@@ -25,7 +26,7 @@ interface PaperStackState {
   clearDownloads: () => void;
   setDownloadProgress: (paperId: string, progress: number) => void;
   clearDownloadProgress: (paperId: string) => void;
-  toggleBookmark: (paperId: string) => void;
+  toggleBookmark: (paperId: string, paper: Paper) => void;
   hydrateStore: () => void;
 }
 
@@ -38,7 +39,7 @@ type PersistedPaperStackState = Pick<
   PaperStackState,
   "userPreferences" | "downloads"
 > & {
-  bookmarkedPaperIds: string[];
+  bookmarkedPapers: [string, Paper][];
 };
 
 export const usePaperStackStore = create<PaperStackState>()(
@@ -47,7 +48,7 @@ export const usePaperStackStore = create<PaperStackState>()(
       userPreferences: initialPreferences,
       downloads: {},
       downloadProgress: {},
-      bookmarkedPaperIds: new Set<string>(),
+      bookmarkedPapers: new Map<string, Paper>(),
       setSelectedBoard: (boardId) =>
         set((state) => ({
           userPreferences: {
@@ -111,17 +112,17 @@ export const usePaperStackStore = create<PaperStackState>()(
             state.downloadProgress;
           return { downloadProgress };
         }),
-      toggleBookmark: (paperId) =>
+      toggleBookmark: (paperId, paper) =>
         set((state) => {
-          const bookmarkedPaperIds = new Set(state.bookmarkedPaperIds);
+          const bookmarkedPapers = new Map(state.bookmarkedPapers);
 
-          if (bookmarkedPaperIds.has(paperId)) {
-            bookmarkedPaperIds.delete(paperId);
+          if (bookmarkedPapers.has(paperId)) {
+            bookmarkedPapers.delete(paperId);
           } else {
-            bookmarkedPaperIds.add(paperId);
+            bookmarkedPapers.set(paperId, paper);
           }
 
-          return { bookmarkedPaperIds };
+          return { bookmarkedPapers };
         }),
       hydrateStore: () => {
         usePaperStackStore.persist.rehydrate();
@@ -134,7 +135,7 @@ export const usePaperStackStore = create<PaperStackState>()(
         ({
           userPreferences: state.userPreferences,
           downloads: state.downloads,
-          bookmarkedPaperIds: Array.from(state.bookmarkedPaperIds),
+          bookmarkedPapers: Array.from(state.bookmarkedPapers.entries()),
         }) as PersistedPaperStackState,
       merge: (persistedState, currentState) => {
         const persisted = persistedState as PersistedPaperStackState | undefined;
@@ -143,7 +144,7 @@ export const usePaperStackStore = create<PaperStackState>()(
           ...currentState,
           ...persisted,
           downloadProgress: {},
-          bookmarkedPaperIds: new Set(persisted?.bookmarkedPaperIds ?? []),
+          bookmarkedPapers: new Map(persisted?.bookmarkedPapers ?? []),
         };
       },
     },

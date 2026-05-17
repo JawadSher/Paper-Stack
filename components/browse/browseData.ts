@@ -6,6 +6,7 @@ export type PaperTypeFilter = "annual" | "supplementary" | "all";
 export type YearFilter = "all" | 2024 | 2023 | 2022 | 2021 | 2020 | 2019;
 
 export const paperYears: Exclude<YearFilter, "all">[] = [2024, 2023, 2022, 2021, 2020, 2019];
+const samplePdfUrl = "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf";
 
 export const boardDescriptions: Record<string, string> = boards.reduce<Record<string, string>>(
   (descriptions, board) => {
@@ -61,7 +62,8 @@ export function generatePapers(board: Board, classLevel: ClassLevel, subject: Su
       classLevel,
       year,
       session,
-      pdfUrl: `https://example.com/papers/${board.id}/${classLevel}/${subject.id}/${year}-${session}.pdf`,
+      // TODO: replace with real CDN URLs when backend is ready
+      pdfUrl: samplePdfUrl,
       fileSizeBytes: 1024 * 1024 * (2 + ((year + session.length + subject.name.length) % 5)),
       createdAt: new Date(year, session === "annual" ? 5 : 10, 15).toISOString(),
       updatedAt: new Date(year, session === "annual" ? 5 : 10, 15).toISOString(),

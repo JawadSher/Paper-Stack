@@ -70,7 +70,7 @@ export default function PdfViewerScreen() {
         classLevel: getClassLevel(params.classLevel),
         year: Number(toStringValue(params.year)) || 2024,
         session: params.session ?? "annual",
-        pdfUrl: toStringValue(params.pdfUrl) ?? "https://pdfobject.com/pdf/sample.pdf",
+        pdfUrl: toStringValue(params.pdfUrl) ?? "",
         fileSizeBytes: Number(toStringValue(params.fileSizeBytes)) || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -111,6 +111,21 @@ export default function PdfViewerScreen() {
   useEffect(() => {
     setSourceUri(downloaded?.localUri ?? paper.pdfUrl);
   }, [downloaded?.localUri, paper.pdfUrl]);
+
+  useEffect(() => {
+    const updateHistory = async () => {
+      try {
+        const value = await AsyncStorage.getItem("paper-stack:paper-history");
+        const parsed = value ? (JSON.parse(value) as Paper[]) : [];
+        const next = [paper, ...parsed.filter((item) => item?.id !== paper.id)].slice(0, 10);
+        await AsyncStorage.setItem("paper-stack:paper-history", JSON.stringify(next));
+      } catch {
+        // History is non-critical; ignore malformed storage values.
+      }
+    };
+
+    updateHistory();
+  }, [paper]);
 
   useEffect(() => {
     AsyncStorage.getItem(resumeKey).then((value) => {
@@ -173,7 +188,7 @@ export default function PdfViewerScreen() {
         <ViewerHeader
           title={title}
           isBookmarked={isBookmarked}
-          onToggleBookmark={toggleBookmark}
+          onToggleBookmark={() => toggleBookmark(paper)}
           onShare={sharePaper}
         />
         <EmptyState
@@ -193,7 +208,7 @@ export default function PdfViewerScreen() {
         <ViewerHeader
           title={title}
           isBookmarked={isBookmarked}
-          onToggleBookmark={toggleBookmark}
+          onToggleBookmark={() => toggleBookmark(paper)}
           onShare={sharePaper}
         />
         <View className="flex-1 bg-muted dark:bg-muted-dark">

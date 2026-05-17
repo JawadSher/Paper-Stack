@@ -16,7 +16,8 @@ const recentPapers: Paper[] = subjects.slice(0, 5).map((subject, index) => ({
   classLevel: subject.classLevel,
   year: 2026 - index,
   session: index % 2 === 0 ? "annual" : "supplementary",
-  pdfUrl: `https://example.com/papers/recent-${index + 1}.pdf`,
+  // TODO: replace with real CDN URLs when backend is ready
+  pdfUrl: "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf",
   createdAt: new Date(Date.now() - index * 86400000).toISOString(),
   updatedAt: new Date(Date.now() - index * 86400000).toISOString(),
 }));

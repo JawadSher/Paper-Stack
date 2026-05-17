@@ -4,42 +4,37 @@ import { Platform, Pressable, SectionList, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getBoard, getPaperById, getSubjectById } from "@/components/browse/browseData";
+import { getBoard, getSubjectById } from "@/components/browse/browseData";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PaperCard } from "@/components/papers/PaperCard";
 import { Typography } from "@/components/ui/Typography";
-import { searchDataset } from "@/hooks/useSearch";
 import { usePaperStackStore } from "@/store";
+import type { Board, Paper, Subject } from "@/types";
 
-function resolveBookmarkedPaper(paperId: string) {
-  const paper = getPaperById(paperId) ?? searchDataset.find((item) => item.paper.id === paperId)?.paper;
-  const board = paper ? getBoard(paper.boardId) : undefined;
-  const subject = paper ? getSubjectById(paper.subjectId) : undefined;
-
-  return paper && board && subject ? { paper, board, subject } : undefined;
-}
-
-type ResolvedBookmark = NonNullable<ReturnType<typeof resolveBookmarkedPaper>>;
-
-function isResolvedBookmark(item: ReturnType<typeof resolveBookmarkedPaper>): item is ResolvedBookmark {
-  return Boolean(item);
-}
+type ResolvedBookmark = { paper: Paper; board: Board; subject: Subject };
 
 export default function BookmarksScreen() {
-  const bookmarkedPaperIds = usePaperStackStore((state) => state.bookmarkedPaperIds);
+  const bookmarkedPapers = usePaperStackStore((state) => state.bookmarkedPapers);
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
   const sections = useMemo(() => {
     const grouped = new Map<string, ResolvedBookmark[]>();
 
-    Array.from(bookmarkedPaperIds)
-      .map(resolveBookmarkedPaper)
-      .filter(isResolvedBookmark)
+    Array.from(bookmarkedPapers.values())
+      .map((paper) => {
+        const board = getBoard(paper.boardId);
+        const subject = getSubjectById(paper.subjectId);
+        return board && subject ? { paper, board, subject } : undefined;
+      })
+      .filter((item): item is ResolvedBookmark => Boolean(item))
       .forEach((item) => {
-        grouped.set(item.subject.name, [...(grouped.get(item.subject.name) ?? []), item]);
+        grouped.set(item.paper.subjectId, [...(grouped.get(item.paper.subjectId) ?? []), item]);
       });
 
-    return Array.from(grouped.entries()).map(([subjectName, data]) => ({ subjectName, data }));
-  }, [bookmarkedPaperIds]);
+    return Array.from(grouped.entries()).map(([subjectId, data]) => ({
+      subjectName: getSubjectById(subjectId)?.name ?? "Unknown Subject",
+      data,
+    }));
+  }, [bookmarkedPapers]);
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
@@ -81,7 +76,7 @@ export default function BookmarksScreen() {
             renderRightActions={() => (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => toggleBookmark(item.paper.id)}
+                onPress={() => toggleBookmark(item.paper.id, item.paper)}
                 className="ml-3 w-24 items-center justify-center rounded-lg bg-destructive dark:bg-destructive-dark"
               >
                 <Bookmark color="#FFFFFF" size={21} />

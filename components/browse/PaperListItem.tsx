@@ -9,6 +9,7 @@ import { BoardBadge } from "@/components/papers/BoardBadge";
 import { Typography } from "@/components/ui/Typography";
 import { colors } from "@/constants/theme";
 import { usePaperStackStore } from "@/store";
+import { useDownload } from "@/hooks/useDownload";
 import type { Board, Paper } from "@/types";
 
 import { formatFileSize, getSubjectById, getViewerParams } from "./browseData";
@@ -26,8 +27,9 @@ const sessionLabels: Record<NonNullable<Paper["session"]>, string> = {
 
 export function PaperListItem({ paper, board }: PaperListItemProps) {
   const router = useRouter();
-  const bookmarked = usePaperStackStore((state) => state.bookmarkedPaperIds.has(paper.id));
+  const bookmarked = usePaperStackStore((state) => state.bookmarkedPapers.has(paper.id));
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
+  const { startDownload } = useDownload(paper);
 
   const openPaper = () => {
     router.push({
@@ -47,7 +49,7 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
   const bookmarkAction = () => (
     <Pressable
       accessibilityRole="button"
-      onPress={() => toggleBookmark(paper.id)}
+      onPress={() => toggleBookmark(paper.id, paper)}
       className="mr-3 w-20 items-center justify-center rounded-lg bg-primary dark:bg-primary-dark"
     >
       <Bookmark color="#FFFFFF" fill="#FFFFFF" size={22} />
@@ -87,7 +89,7 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
               accessibilityRole="button"
               onPress={(event) => {
                 event.stopPropagation();
-                toggleBookmark(paper.id);
+                toggleBookmark(paper.id, paper);
               }}
               className="h-8 w-8 items-center justify-center rounded-full bg-muted dark:bg-muted-dark"
             >
@@ -100,7 +102,11 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
           </View>
         </View>
         <View className="items-end gap-2">
-          <DownloadButton paperId={paper.id} fileName={`${paper.title}.pdf`} />
+          <DownloadButton
+            paperId={paper.id}
+            fileName={`${paper.title}.pdf`}
+            onDownload={startDownload}
+          />
           <ChevronRight color={colors.mutedForeground.light} size={20} />
         </View>
       </Pressable>

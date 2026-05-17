@@ -35,7 +35,10 @@ export function AppInfo() {
       </View>
       <Pressable
         accessibilityRole="button"
-        onPress={() => Linking.openURL("https://expo.dev")}
+        // TODO: replace with real Play Store / App Store URL after publishing
+        onPress={() =>
+          Linking.openURL("https://play.google.com/store/apps/details?id=com.paperstack.app")
+        }
         className="flex-row items-center gap-3 border-t border-border px-4 py-3 active:bg-muted dark:border-border-dark dark:active:bg-muted-dark"
       >
         <Star color={colors.primary.light} size={18} />

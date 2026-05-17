@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,8 +15,11 @@ import {
   type YearFilter,
 } from "@/components/browse/browseData";
 import { BoardBadge } from "@/components/papers/BoardBadge";
+import { NetworkError } from "@/components/common/NetworkError";
 import { Typography } from "@/components/ui/Typography";
 import { colors } from "@/constants/theme";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import type { Paper } from "@/types";
 
 const paperTypes: { label: string; value: PaperTypeFilter }[] = [
   { label: "Annual", value: "annual" },
@@ -36,10 +39,19 @@ export default function PaperListScreen() {
   const subject = getSubject(classLevel, subjectId);
   const [selectedYear, setSelectedYear] = useState<YearFilter>("all");
   const [selectedType, setSelectedType] = useState<PaperTypeFilter>("all");
-  const papers = useMemo(
-    () => (board && classLevel && subject ? generatePapers(board, classLevel, subject) : []),
-    [board, classLevel, subject],
-  );
+  const [error, setError] = useState(false);
+  const [papers, setPapers] = useState<Paper[]>([]);
+  const { isConnected } = useNetworkStatus();
+
+  useEffect(() => {
+    try {
+      setPapers(board && classLevel && subject ? generatePapers(board, classLevel, subject) : []);
+      setError(false);
+    } catch {
+      setPapers([]);
+      setError(true);
+    }
+  }, [board, classLevel, subject]);
 
   if (!board || !classLevel || !subject) {
     return (
@@ -55,6 +67,14 @@ export default function PaperListScreen() {
       params: { boardId: board.id, classId: String(classLevel), subjectId: subject.id },
     } as never);
   };
+
+  if (error && !isConnected) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+        <NetworkError onRetry={() => setError(false)} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>

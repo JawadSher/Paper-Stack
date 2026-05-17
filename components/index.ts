@@ -8,7 +8,6 @@ export * from "./common/YearChip";
 export * from "./papers/BoardBadge";
 export * from "./papers/DownloadButton";
 export * from "./papers/PaperCard";
-export * from "./papers/QuestionCard";
 export * from "./providers/nativewind-theme-provider";
 export * from "./ui/Badge";
 export * from "./ui/Button";

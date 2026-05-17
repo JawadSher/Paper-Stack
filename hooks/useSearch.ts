@@ -21,6 +21,7 @@ export interface SearchPaperResult {
 
 const years = [2024, 2023, 2022, 2021, 2020, 2019];
 const sessions: NonNullable<Paper["session"]>[] = ["annual", "supplementary"];
+const samplePdfUrl = "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf";
 
 export const emptySearchFilters: SearchFilters = {
   boardIds: [],
@@ -46,7 +47,8 @@ export const searchDataset: SearchPaperResult[] = boards.flatMap((board) =>
             classLevel: subject.classLevel,
             year,
             session,
-            pdfUrl: `https://example.com/papers/${board.id}/${subject.classLevel}/${subject.id}/${year}-${session}.pdf`,
+            // TODO: replace with real CDN URLs when backend is ready
+            pdfUrl: samplePdfUrl,
             fileSizeBytes: 1024 * 1024 * (2 + ((year + board.id.length + subject.name.length) % 5)),
             createdAt: new Date(year, session === "annual" ? 5 : 10, 12).toISOString(),
             updatedAt: new Date(year, session === "annual" ? 5 : 10, 12).toISOString(),
