@@ -9,14 +9,30 @@ import { NewPapers } from "@/components/home/NewPapers";
 import { PopularSubjects } from "@/components/home/PopularSubjects";
 import { StatsBar } from "@/components/home/StatsBar";
 
-function StaggeredSection({ children, delay }: { children: React.ReactNode; delay: number }) {
+function StaggeredSection({
+  children,
+  delay,
+}: {
+  children: React.ReactNode;
+  delay: number;
+}) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 300, delay, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 300, delay, useNativeDriver: true }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 300,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 300,
+        delay,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [delay, opacity, translateY]);
 
@@ -38,7 +54,10 @@ export default function HomeScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+    <SafeAreaView
+      className="flex-1 bg-background dark:bg-background-dark"
+      edges={["top"]}
+    >
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-7 px-5 pb-10 pt-5"
