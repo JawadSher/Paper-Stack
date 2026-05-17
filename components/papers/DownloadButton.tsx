@@ -29,6 +29,8 @@ export function DownloadButton({ paperId, fileName, onDownload }: DownloadButton
   const clearDownloadProgress = usePaperStackStore((state) => state.clearDownloadProgress);
   const [error, setError] = useState(false);
   const animatedProgress = useRef(new Animated.Value(progress)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
   const downloaded = Boolean(downloads[paperId]);
   const downloading = progress > 0 && progress < 1 && !downloaded;
 
@@ -39,6 +41,27 @@ export function DownloadButton({ paperId, fileName, onDownload }: DownloadButton
       useNativeDriver: false,
     }).start();
   }, [animatedProgress, progress]);
+
+  useEffect(() => {
+    if (downloading) {
+      rotate.setValue(0);
+      Animated.loop(
+        Animated.timing(rotate, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ).start();
+      return;
+    }
+
+    rotate.stopAnimation();
+  }, [downloading, rotate]);
+
+  useEffect(() => {
+    if (downloaded) {
+      Animated.sequence([
+        Animated.spring(scale, { toValue: 1.12, useNativeDriver: true, tension: 180, friction: 8 }),
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true, tension: 180, friction: 8 }),
+      ]).start();
+    }
+  }, [downloaded, scale]);
 
   const strokeDashoffset = useMemo(
     () =>
@@ -76,18 +99,32 @@ export function DownloadButton({ paperId, fileName, onDownload }: DownloadButton
 
   if (downloaded) {
     return (
-      <Pressable className="flex-row items-center gap-1.5 rounded-full bg-chart-3 px-3 py-2 dark:bg-chart-3-dark">
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Pressable className="flex-row items-center gap-1.5 rounded-full bg-chart-3 px-3 py-2 dark:bg-chart-3-dark">
         <Check color={colors.chart[3].dark} size={16} />
         <Typography variant="caption" weight="semibold">
           Downloaded
         </Typography>
-      </Pressable>
+        </Pressable>
+      </Animated.View>
     );
   }
 
   if (downloading) {
     return (
       <View className="flex-row items-center gap-2 rounded-full bg-muted px-3 py-2 dark:bg-muted-dark">
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: rotate.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+            ],
+          }}
+        >
         <Svg width={ringSize} height={ringSize}>
           <Circle
             cx={ringSize / 2}
@@ -111,6 +148,7 @@ export function DownloadButton({ paperId, fileName, onDownload }: DownloadButton
             origin={`${ringSize / 2}, ${ringSize / 2}`}
           />
         </Svg>
+        </Animated.View>
         <Typography variant="caption" weight="semibold">
           {Math.round(progress * 100)}%
         </Typography>

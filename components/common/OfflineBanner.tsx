@@ -1,20 +1,13 @@
-import { useEffect, useState } from "react";
 import { View } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
 import { WifiOff } from "lucide-react-native";
+
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 import { Typography } from "../ui/Typography";
 
 export function OfflineBanner() {
-  const [offline, setOffline] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setOffline(state.isConnected === false || state.isInternetReachable === false);
-    });
-
-    return unsubscribe;
-  }, []);
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const offline = !isConnected || !isInternetReachable;
 
   if (!offline) {
     return null;

@@ -101,7 +101,7 @@ export function Button({
               weight="semibold"
               className={
                 variant === "primary" || variant === "danger"
-                  ? "text-primary-foreground"
+                  ? "text-white dark:text-white"
                   : undefined
               }
             >

@@ -2,7 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import type { ClassLevel, Download, ThemePreference, UserPreferences } from "@/types";
+import type {
+  ClassLevel,
+  Download,
+  TextSizePreference,
+  ThemePreference,
+  UserPreferences,
+} from "@/types";
 
 interface PaperStackState {
   userPreferences: UserPreferences;
@@ -10,10 +16,13 @@ interface PaperStackState {
   downloadProgress: Record<string, number>;
   bookmarkedPaperIds: Set<string>;
   setSelectedBoard: (boardId?: string) => void;
+  setSelectedBoards: (boardIds: string[]) => void;
   setSelectedClass: (classLevel?: ClassLevel) => void;
   setTheme: (theme: ThemePreference) => void;
+  setTextSize: (textSize: TextSizePreference) => void;
   addDownload: (download: Download) => void;
   removeDownload: (paperId: string) => void;
+  clearDownloads: () => void;
   setDownloadProgress: (paperId: string, progress: number) => void;
   clearDownloadProgress: (paperId: string) => void;
   toggleBookmark: (paperId: string) => void;
@@ -22,6 +31,7 @@ interface PaperStackState {
 
 const initialPreferences: UserPreferences = {
   theme: "system",
+  textSize: "medium",
 };
 
 type PersistedPaperStackState = Pick<
@@ -43,6 +53,15 @@ export const usePaperStackStore = create<PaperStackState>()(
           userPreferences: {
             ...state.userPreferences,
             selectedBoard: boardId,
+            selectedBoards: boardId ? [boardId] : [],
+          },
+        })),
+      setSelectedBoards: (boardIds) =>
+        set((state) => ({
+          userPreferences: {
+            ...state.userPreferences,
+            selectedBoard: boardIds[0],
+            selectedBoards: boardIds,
           },
         })),
       setSelectedClass: (classLevel) =>
@@ -59,6 +78,13 @@ export const usePaperStackStore = create<PaperStackState>()(
             theme,
           },
         })),
+      setTextSize: (textSize) =>
+        set((state) => ({
+          userPreferences: {
+            ...state.userPreferences,
+            textSize,
+          },
+        })),
       addDownload: (download) =>
         set((state) => ({
           downloads: {
@@ -71,6 +97,7 @@ export const usePaperStackStore = create<PaperStackState>()(
           const { [paperId]: _removed, ...downloads } = state.downloads;
           return { downloads };
         }),
+      clearDownloads: () => set({ downloads: {}, downloadProgress: {} }),
       setDownloadProgress: (paperId, progress) =>
         set((state) => ({
           downloadProgress: {

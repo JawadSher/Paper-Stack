@@ -50,3 +50,5 @@ export function QuestionCard({
     </Card>
   );
 }
+
+export { QuestionCard as PaperQuestionCard };

@@ -1,6 +1,7 @@
 export type ClassLevel = 9 | 10 | 11 | 12;
 
 export type ThemePreference = "light" | "dark" | "system";
+export type TextSizePreference = "small" | "medium" | "large";
 
 export interface Board {
   id: string;
@@ -60,6 +61,8 @@ export interface Question {
 
 export interface UserPreferences {
   selectedBoard?: Board["id"];
+  selectedBoards?: Board["id"][];
   selectedClass?: ClassLevel;
   theme: ThemePreference;
+  textSize?: TextSizePreference;
 }

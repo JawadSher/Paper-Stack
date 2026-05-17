@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Pressable, View } from "react-native";
 import { Bookmark } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -5,6 +6,7 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/theme";
 import { usePaperStackStore } from "@/store";
 import type { Board, Paper, Subject } from "@/types";
+import { getViewerParams } from "@/components/browse/browseData";
 
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
@@ -16,6 +18,7 @@ export interface PaperCardProps {
   paper: Paper;
   board: Board;
   subject?: Subject;
+  variant?: "default" | "compactHorizontal";
   onDownload?: React.ComponentProps<typeof DownloadButton>["onDownload"];
   onPress?: (paper: Paper) => void;
 }
@@ -26,7 +29,14 @@ const sessionLabels: Record<NonNullable<Paper["session"]>, string> = {
   model: "Model",
 };
 
-export function PaperCard({ paper, board, subject, onDownload, onPress }: PaperCardProps) {
+function PaperCardComponent({
+  paper,
+  board,
+  subject,
+  variant = "default",
+  onDownload,
+  onPress,
+}: PaperCardProps) {
   const router = useRouter();
   const bookmarked = usePaperStackStore((state) => state.bookmarkedPaperIds.has(paper.id));
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
@@ -38,10 +48,29 @@ export function PaperCard({ paper, board, subject, onDownload, onPress }: PaperC
     }
 
     router.push({
-      pathname: "/pdf-viewer",
-      params: { paperId: paper.id, pdfUrl: paper.pdfUrl },
+      pathname: "/(stack)/viewer/[paperId]",
+      params: getViewerParams(paper, subject, board),
     } as never);
   };
+
+  if (variant === "compactHorizontal") {
+    return (
+      <Card onPress={openPaper} className="w-64 gap-3">
+        <View className="gap-2">
+          <Typography variant="body" weight="semibold" numberOfLines={2}>
+            {subject?.name ?? paper.title}
+          </Typography>
+          <View className="flex-row flex-wrap items-center gap-2">
+            <BoardBadge board={board} />
+            <Badge label={`${paper.year}`} size="sm" />
+          </View>
+        </View>
+        <Typography variant="caption" color="muted" numberOfLines={1}>
+          Class {paper.classLevel} | {sessionLabels[paper.session ?? "annual"]}
+        </Typography>
+      </Card>
+    );
+  }
 
   return (
     <Card onPress={openPaper} className="gap-4">
@@ -82,3 +111,12 @@ export function PaperCard({ paper, board, subject, onDownload, onPress }: PaperC
     </Card>
   );
 }
+
+export const PaperCard = memo(
+  PaperCardComponent,
+  (prev, next) =>
+    prev.paper.id === next.paper.id &&
+    prev.board.id === next.board.id &&
+    prev.subject?.id === next.subject?.id &&
+    prev.variant === next.variant,
+);

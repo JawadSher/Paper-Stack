@@ -1,5 +1,7 @@
 import { Text, type TextProps } from "react-native";
 
+import { usePaperStackStore } from "@/store";
+
 type TypographyVariant =
   | "heading1"
   | "heading2"
@@ -61,16 +63,36 @@ const alignClasses: Record<TypographyAlign, string> = {
   right: "text-right",
 };
 
+const textSizeScale = {
+  small: 0.92,
+  medium: 1,
+  large: 1.1,
+};
+
+const variantMetrics: Record<TypographyVariant, { fontSize: number; lineHeight: number }> = {
+  heading1: { fontSize: 30, lineHeight: 40 },
+  heading2: { fontSize: 24, lineHeight: 32 },
+  heading3: { fontSize: 20, lineHeight: 28 },
+  body: { fontSize: 16, lineHeight: 24 },
+  bodySmall: { fontSize: 14, lineHeight: 20 },
+  caption: { fontSize: 12, lineHeight: 16 },
+  label: { fontSize: 14, lineHeight: 20 },
+};
+
 export function Typography({
   variant = "body",
   color = "foreground",
   weight,
   align = "left",
   className,
+  style,
   ...props
 }: TypographyProps) {
+  const textSize = usePaperStackStore((state) => state.userPreferences.textSize ?? "medium");
   const resolvedWeight =
     weight ?? (variant.startsWith("heading") || variant === "label" ? "semibold" : "regular");
+  const scale = textSizeScale[textSize];
+  const metrics = variantMetrics[variant];
 
   return (
     <Text
@@ -85,6 +107,13 @@ export function Typography({
         .filter(Boolean)
         .join(" ")}
       {...props}
+      style={[
+        {
+          fontSize: metrics.fontSize * scale,
+          lineHeight: metrics.lineHeight * scale,
+        },
+        style,
+      ]}
     />
   );
 }
