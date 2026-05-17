@@ -10,7 +10,13 @@ import { usePaperStackStore } from "@/store";
 
 import { BoardCard } from "./BoardCard";
 
-function AnimatedBoardItem({ children, index }: { children: React.ReactNode; index: number }) {
+function AnimatedBoardItem({
+  children,
+  index,
+}: {
+  children: React.ReactNode;
+  index: number;
+}) {
   const scale = useRef(new Animated.Value(0.92)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -33,7 +39,10 @@ function AnimatedBoardItem({ children, index }: { children: React.ReactNode; ind
   }, [index, opacity, scale]);
 
   return (
-    <Animated.View className="w-[48%]" style={{ opacity, transform: [{ scale }] }}>
+    <Animated.View
+      className="w-[48%]"
+      style={{ opacity, transform: [{ scale }] }}
+    >
       {children}
     </Animated.View>
   );

@@ -26,7 +26,9 @@ function normalizeHistory(value: string | null): Paper[] {
     }
 
     return parsed
-      .filter((paper): paper is Paper => Boolean(paper?.id && paper?.boardId && paper?.subjectId))
+      .filter((paper): paper is Paper =>
+        Boolean(paper?.id && paper?.boardId && paper?.subjectId),
+      )
       .slice(0, 5);
   } catch {
     return [];
@@ -36,8 +38,14 @@ function normalizeHistory(value: string | null): Paper[] {
 export function ContinueBrowsing() {
   const [loading, setLoading] = useState(true);
   const [papers, setPapers] = useState<Paper[]>([]);
-  const boardMap = useMemo(() => new Map(boards.map((board) => [board.id, board])), []);
-  const subjectMap = useMemo(() => new Map(subjects.map((subject) => [subject.id, subject])), []);
+  const boardMap = useMemo(
+    () => new Map(boards.map((board) => [board.id, board])),
+    [],
+  );
+  const subjectMap = useMemo(
+    () => new Map(subjects.map((subject) => [subject.id, subject])),
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
