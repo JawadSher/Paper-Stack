@@ -1,8 +1,12 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import * as FileSystem from "expo-file-system/legacy";
 
-import { getBoard, getPaperById, getSubjectById } from "@/components/browse/browseData";
-import { searchDataset } from "@/hooks/useSearch";
+import { getBoard, getSubjectById } from "@/components/browse/browseData";
+import {
+  deleteDownloadFiles,
+  deletePaperStackDownloadDirectory,
+  readPaperStackDownloadMetadata,
+} from "@/lib/offline-files";
 import { usePaperStackStore } from "@/store";
 import type { Board, Download, Paper, Subject } from "@/types";
 import { useToast } from "@/components/common/Toast";
@@ -14,34 +18,29 @@ export interface DownloadedPaper {
   subject: Subject;
 }
 
-function fallbackPaper(download: Download): DownloadedPaper {
-  const subject = getSubjectById("class-10-physics")!;
-  const board = getBoard("bise-lahore")!;
-
-  return {
-    download,
-    board,
-    subject,
-    paper: {
-      id: download.paperId,
-      title: download.fileName.replace(/\.pdf$/i, ""),
-      boardId: board.id,
-      subjectId: subject.id,
-      classLevel: subject.classLevel,
-      year: new Date(download.downloadedAt).getFullYear(),
-      session: "annual",
-      pdfUrl: download.localUri,
-      fileSizeBytes: download.fileSizeBytes,
-      createdAt: download.downloadedAt,
-      updatedAt: download.downloadedAt,
-    },
-  };
-}
-
-function resolveDownloadedPaper(download: Download): DownloadedPaper {
-  const paper = getPaperById(download.paperId) ?? searchDataset.find((item) => item.paper.id === download.paperId)?.paper;
-  const board = paper ? getBoard(paper.boardId) : undefined;
-  const subject = paper ? getSubjectById(paper.subjectId) : undefined;
+function resolveDownloadedPaper(download: Download): DownloadedPaper | undefined {
+  const paper = download.paperSnapshot;
+  const board =
+    paper?.board
+      ? ({
+          displayOrder: 0,
+          isActive: true,
+          ...paper.board,
+        } as Board)
+      : paper
+        ? getBoard(paper.boardId)
+        : undefined;
+  const subject =
+    paper?.subject
+      ? ({
+          displayOrder: 0,
+          isCompulsory: false,
+          isActive: true,
+          ...paper.subject,
+        } as Subject)
+      : paper
+        ? getSubjectById(paper.subjectId)
+        : undefined;
 
   if (paper && board && subject) {
     return {
@@ -56,18 +55,21 @@ function resolveDownloadedPaper(download: Download): DownloadedPaper {
     };
   }
 
-  return fallbackPaper(download);
+  return undefined;
 }
 
 export function useDownloads() {
   const { showToast } = useToast();
   const downloads = usePaperStackStore((state) => state.downloads);
+  const addDownload = usePaperStackStore((state) => state.addDownload);
   const removeDownload = usePaperStackStore((state) => state.removeDownload);
   const clearDownloads = usePaperStackStore((state) => state.clearDownloads);
+  const [isHydratingDownloads, setIsHydratingDownloads] = useState(true);
   const downloadedPapers = useMemo(
     () =>
       Object.values(downloads)
         .map(resolveDownloadedPaper)
+        .filter((item): item is DownloadedPaper => Boolean(item))
         .sort(
           (left, right) =>
             new Date(right.download.downloadedAt).getTime() -
@@ -80,14 +82,46 @@ export function useDownloads() {
     0,
   );
 
-  const deleteDownload = async (paperId: string) => {
-    const download = downloads[paperId];
+  const refreshDownloads = useCallback(async () => {
+    setIsHydratingDownloads(true);
 
     try {
-      if (download?.localUri) {
-        await FileSystem.deleteAsync(download.localUri, { idempotent: true });
-      }
+      const folderDownloads = await readPaperStackDownloadMetadata();
 
+      folderDownloads.forEach((download) => {
+        if (!downloads[download.paperId]) {
+          addDownload(download);
+        }
+      });
+
+      await Promise.all(
+        Object.values(downloads).map(async (download) => {
+          if (!download.localUri) {
+            removeDownload(download.paperId);
+            return;
+          }
+
+          const info = await FileSystem.getInfoAsync(download.localUri).catch(() => ({
+            exists: false,
+          }));
+
+          if (!info.exists) {
+            removeDownload(download.paperId);
+          }
+        }),
+      );
+    } finally {
+      setIsHydratingDownloads(false);
+    }
+  }, [addDownload, downloads, removeDownload]);
+
+  useEffect(() => {
+    refreshDownloads();
+  }, [refreshDownloads]);
+
+  const deleteDownload = async (paperId: string) => {
+    try {
+      await deleteDownloadFiles(downloads[paperId]);
       removeDownload(paperId);
       showToast({ type: "success", title: "Download removed" });
     } catch {
@@ -97,13 +131,7 @@ export function useDownloads() {
 
   const clearAllDownloads = async () => {
     try {
-      await Promise.all(
-        Object.values(downloads).map((download) =>
-          download.localUri
-            ? FileSystem.deleteAsync(download.localUri, { idempotent: true }).catch(() => undefined)
-            : Promise.resolve(),
-        ),
-      );
+      await deletePaperStackDownloadDirectory();
       clearDownloads();
       showToast({ type: "success", title: "Downloads cleared" });
     } catch {
@@ -114,6 +142,8 @@ export function useDownloads() {
   return {
     downloadedPapers,
     totalSize,
+    isHydratingDownloads,
+    refreshDownloads,
     deleteDownload,
     clearAllDownloads,
   };

@@ -3,13 +3,13 @@ import { Search } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 
-import { EmptyState } from "@/components/common/EmptyState";
 import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { PaperCard } from "@/components/papers/PaperCard";
 import { Typography } from "@/components/ui/Typography";
 import { boards } from "@/constants/boards";
 import { subjects } from "@/constants/subjects";
-import type { Paper } from "@/types";
+import { usePapersByIds } from "@/hooks/api";
+import type { Board, Paper, Subject } from "@/types";
 
 const historyKey = "paper-stack:paper-history";
 
@@ -37,7 +37,10 @@ function normalizeHistory(value: string | null): Paper[] {
 
 export function ContinueBrowsing() {
   const [loading, setLoading] = useState(true);
-  const [papers, setPapers] = useState<Paper[]>([]);
+  const [storedPaperHistory, setStoredPaperHistory] = useState<Paper[]>([]);
+  const [historyIds, setHistoryIds] = useState<string[]>([]);
+  const { data: hydratedPapers = [] } = usePapersByIds(historyIds);
+  const papersToShow = hydratedPapers.length > 0 ? hydratedPapers : storedPaperHistory;
   const boardMap = useMemo(
     () => new Map(boards.map((board) => [board.id, board])),
     [],
@@ -53,7 +56,9 @@ export function ContinueBrowsing() {
     AsyncStorage.getItem(historyKey)
       .then((value) => {
         if (mounted) {
-          setPapers(normalizeHistory(value));
+          const history = normalizeHistory(value);
+          setStoredPaperHistory(history);
+          setHistoryIds(history.map((paper) => paper.id));
         }
       })
       .finally(() => {
@@ -80,12 +85,12 @@ export function ContinueBrowsing() {
             ))}
           </View>
         </ScrollView>
-      ) : papers.length ? (
+      ) : papersToShow.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row gap-3">
-            {papers.map((paper) => {
-              const board = boardMap.get(paper.boardId);
-              const subject = subjectMap.get(paper.subjectId);
+            {papersToShow.map((paper) => {
+              const board = (paper.board as Board | undefined) ?? boardMap.get(paper.boardId);
+              const subject = (paper.subject as Subject | undefined) ?? subjectMap.get(paper.subjectId);
 
               return board ? (
                 <PaperCard
@@ -100,11 +105,17 @@ export function ContinueBrowsing() {
           </View>
         </ScrollView>
       ) : (
-        <EmptyState
-          icon={Search}
-          title="Start exploring papers"
-          subtitle="Recently opened papers will appear here."
-        />
+        <View className="min-h-36 items-center justify-center gap-3 rounded-lg border border-border bg-card px-5 py-6 dark:border-border-dark dark:bg-card-dark">
+          <Search color="#C96442" size={28} />
+          <View className="gap-1">
+            <Typography variant="body" weight="semibold" align="center">
+              Start exploring papers
+            </Typography>
+            <Typography variant="caption" color="muted" align="center">
+              Recently opened papers will appear here.
+            </Typography>
+          </View>
+        </View>
       )}
     </View>
   );

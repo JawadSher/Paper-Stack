@@ -3,8 +3,8 @@ import { Pressable, View } from "react-native";
 
 import { Badge } from "@/components/ui/Badge";
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
 import { colors } from "@/constants/theme";
+import { useBoards } from "@/hooks/api";
 import { usePaperStackStore } from "@/store";
 
 interface HomeHeaderProps {
@@ -26,9 +26,10 @@ function getGreeting() {
 }
 
 export function HomeHeader({ hasNewPapers = false }: HomeHeaderProps) {
-  const preferences = usePaperStackStore((state) => state.userPreferences);
-  const boardId = preferences.selectedBoards?.[0] ?? preferences.selectedBoard;
-  const board = boards.find((item) => item.id === boardId);
+  const { data: allBoards = [] } = useBoards();
+  const { userPreferences } = usePaperStackStore();
+  const boardId = userPreferences.selectedBoards?.[0] ?? userPreferences.selectedBoard;
+  const selectedBoard = allBoards.find((item) => item.id === boardId);
 
   return (
     <View className="flex-row items-start justify-between gap-4">
@@ -40,9 +41,13 @@ export function HomeHeader({ hasNewPapers = false }: HomeHeaderProps) {
           </Typography>
         </View>
         <View className="flex-row flex-wrap gap-2">
-          <Badge label={board?.shortName ?? "All boards"} color={board?.color} />
+          <Badge label={selectedBoard?.shortName ?? "All boards"} color={selectedBoard?.color} />
           <Badge
-            label={preferences.selectedClass ? `Class ${preferences.selectedClass}` : "All classes"}
+            label={
+              userPreferences.selectedClass
+                ? `Class ${userPreferences.selectedClass}`
+                : "All classes"
+            }
           />
         </View>
       </View>

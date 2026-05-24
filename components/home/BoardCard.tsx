@@ -8,7 +8,7 @@ import type { Board } from "@/types";
 
 interface BoardCardProps {
   board: Board;
-  paperCount: number;
+  paperCount?: number;
 }
 
 function BoardCardComponent({ board, paperCount }: BoardCardProps) {
@@ -33,9 +33,11 @@ function BoardCardComponent({ board, paperCount }: BoardCardProps) {
           {board.province}
         </Typography>
       </View>
-      <Typography variant="caption" color="primary" weight="semibold">
-        {paperCount}+ papers
-      </Typography>
+      {typeof paperCount === "number" ? (
+        <Typography variant="caption" color="primary" weight="semibold">
+          {paperCount}+ papers
+        </Typography>
+      ) : null}
     </Card>
   );
 }

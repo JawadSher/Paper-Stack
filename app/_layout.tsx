@@ -68,8 +68,24 @@ export default function RootLayout() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 60 * 5,
-            retry: 1,
+            staleTime: 3 * 60 * 1000,
+            gcTime: 10 * 60 * 1000,
+            retry: (failureCount, error: any) => {
+              if (error?.message?.includes("not found")) {
+                return false;
+              }
+
+              if (error?.message?.includes("Network request failed")) {
+                return false;
+              }
+
+              return failureCount < 2;
+            },
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: true,
+          },
+          mutations: {
+            retry: 0,
           },
         },
       }),

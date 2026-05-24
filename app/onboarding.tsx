@@ -6,9 +6,11 @@ import { FlatList, Platform, Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
+import { boards as boardsFallback } from "@/constants/boards";
 import { colors } from "@/constants/theme";
+import { useBoards } from "@/hooks/api";
 import { usePaperStackStore } from "@/store";
 import type { ClassLevel } from "@/types";
 
@@ -58,6 +60,9 @@ function PaperStackLogo() {
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { data: boards = [], isLoading: boardsLoading } = useBoards();
+  // OFFLINE FALLBACK — remove when confident in connectivity
+  const boardsToShow = !boardsLoading && boards.length === 0 ? boardsFallback : boards;
   const setSelectedBoards = usePaperStackStore(
     (state) => state.setSelectedBoards,
   );
@@ -155,8 +160,15 @@ export default function OnboardingScreen() {
                 Choose one or more boards you follow.
               </Typography>
             </View>
+            {boardsLoading ? (
+              <View className="gap-3">
+                {[0, 1, 2, 3].map((item) => (
+                  <SkeletonLoader key={item} variant="boardCard" />
+                ))}
+              </View>
+            ) : (
             <FlatList
-              data={boards}
+              data={boardsToShow}
               keyExtractor={(item) => item.id}
               getItemLayout={(_, index) => ({
                 length: 108,
@@ -207,6 +219,7 @@ export default function OnboardingScreen() {
                 );
               }}
             />
+            )}
             <View className="flex-row gap-3">
               <Button variant="ghost" fullWidth onPress={() => setStep(2)}>
                 Skip

@@ -4,8 +4,7 @@ import { View } from "react-native";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { Button } from "@/components/ui/Button";
-import type { SearchFilters } from "@/hooks/useSearch";
-import { getActiveFilterCount } from "@/hooks/useSearch";
+import type { SearchFilters } from "@/components/search/FilterChips";
 
 interface SearchEmptyProps {
   query: string;
@@ -15,7 +14,13 @@ interface SearchEmptyProps {
 
 export function SearchEmpty({ query, filters, onClearFilters }: SearchEmptyProps) {
   const router = useRouter();
-  const hasFilters = getActiveFilterCount(filters) > 0;
+  const hasFilters =
+    filters.boardIds.length +
+      filters.classes.length +
+      filters.subjectIds.length +
+      filters.years.length +
+      filters.paperTypes.length >
+    0;
 
   return (
     <View className="gap-3">

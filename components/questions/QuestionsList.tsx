@@ -4,10 +4,16 @@ import { Platform, Pressable, SectionList, View } from "react-native";
 
 import { Badge } from "@/components/ui/Badge";
 import { Typography } from "@/components/ui/Typography";
-import type { QuestionGroup } from "@/hooks/useCommonQuestions";
 import { colors } from "@/constants/theme";
+import type { CommonQuestion } from "@/types";
 
 import { QuestionCard } from "./QuestionCard";
+
+export interface QuestionGroup {
+  chapterId: string;
+  chapterName: string;
+  questions: CommonQuestion[];
+}
 
 interface QuestionsListProps {
   groups: QuestionGroup[];

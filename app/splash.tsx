@@ -1,40 +1,73 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image } from "expo-image";
 import { Href, useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Animated, View } from "react-native";
+import { Animated, Easing, Text, View } from "react-native";
 
-import { Typography } from "@/components/ui/Typography";
+import { colors } from "@/constants/theme";
 
 const onboardingFlagKey = "paper-stack:onboarding-complete";
+const shimmerTextWidth = 292;
+const shimmerBandWidth = 96;
 
-function PaperStackMark() {
-  const first = useRef(new Animated.Value(20)).current;
-  const second = useRef(new Animated.Value(34)).current;
-  const third = useRef(new Animated.Value(48)).current;
+function BrandText({ shimmer }: { shimmer: Animated.Value }) {
+  const shimmerTranslate = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-shimmerBandWidth, shimmerTextWidth + shimmerBandWidth],
+  });
 
-  useEffect(() => {
-    Animated.stagger(140, [
-      Animated.spring(first, { toValue: 0, useNativeDriver: true, tension: 80, friction: 8 }),
-      Animated.spring(second, { toValue: 0, useNativeDriver: true, tension: 80, friction: 8 }),
-      Animated.spring(third, { toValue: 0, useNativeDriver: true, tension: 80, friction: 8 }),
-    ]).start();
-  }, [first, second, third]);
+  const counterTranslate = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [shimmerBandWidth, -(shimmerTextWidth + shimmerBandWidth)],
+  });
+
+  const textStyle = {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 46,
+    lineHeight: 56,
+    letterSpacing: 0,
+    textAlign: "center" as const,
+  };
 
   return (
-    <View className="h-28 w-28 items-center justify-center">
-      {[first, second, third].map((value, index) => (
-        <Animated.View
-          key={index}
-          className="absolute h-16 w-20 rounded-lg border-2 border-primary bg-card dark:border-primary-dark dark:bg-card-dark"
-          style={{
-            transform: [
-              { translateY: value },
-              { rotate: index === 0 ? "-7deg" : index === 1 ? "4deg" : "0deg" },
-            ],
-            opacity: index === 0 ? 0.55 : index === 1 ? 0.75 : 1,
-          }}
-        />
-      ))}
+    <View style={{ width: shimmerTextWidth, overflow: "hidden" }}>
+      <Text style={[textStyle, { color: colors.foreground.light }]}>
+        Paper{" "}
+        <Text style={{ color: colors.primary.light }}>
+          Stack
+        </Text>
+      </Text>
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          top: 0,
+          width: shimmerBandWidth,
+          overflow: "hidden",
+          transform: [{ translateX: shimmerTranslate }],
+        }}
+      >
+        <Animated.Text
+          style={[
+            textStyle,
+            {
+              width: shimmerTextWidth,
+              color: "#FFFFFF",
+              textShadowColor: `${colors.primary.light}99`,
+              textShadowOffset: { width: 0, height: 0 },
+              textShadowRadius: 12,
+              transform: [{ translateX: counterTranslate }],
+            },
+          ]}
+        >
+          Paper{" "}
+          <Text style={{ color: "#FFD2C3" }}>
+            Stack
+          </Text>
+        </Animated.Text>
+      </Animated.View>
     </View>
   );
 }
@@ -42,24 +75,38 @@ function PaperStackMark() {
 export default function SplashScreenRoute() {
   const router = useRouter();
   const opacity = useRef(new Animated.Value(0)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1450,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ).start();
+
     const timer = setTimeout(async () => {
       const completed = await AsyncStorage.getItem(onboardingFlagKey).catch(() => null);
       router.replace((completed ? "/(tabs)/home" : "/onboarding") as Href);
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [opacity, router]);
+  }, [opacity, router, shimmer]);
 
   return (
-    <View className="flex-1 items-center justify-center gap-5 bg-background dark:bg-background-dark">
-      <PaperStackMark />
+    <View className="flex-1 items-center justify-center gap-8 bg-background dark:bg-background-dark">
       <Animated.View style={{ opacity }}>
-        <Typography variant="heading1" align="center">
-          PaperStack
-        </Typography>
+        <Image
+          source={require("@/assets/images/icon.png")}
+          contentFit="contain"
+          style={{ height: 204, width: 204 }}
+        />
+      </Animated.View>
+      <Animated.View style={{ opacity }}>
+        <BrandText shimmer={shimmer} />
       </Animated.View>
     </View>
   );

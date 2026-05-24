@@ -1,16 +1,20 @@
 import { useMemo, useState } from "react";
-import { Platform, Pressable, SectionList, View } from "react-native";
+import { Platform, Pressable, RefreshControl, SectionList, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Download } from "lucide-react-native";
+import { Download, FolderDown } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
+import { getBoard, getSubjectById } from "@/components/browse/browseData";
 import { EmptyState } from "@/components/common/EmptyState";
 import { DownloadedPaperCard } from "@/components/downloads/DownloadedPaperCard";
 import { DownloadGroupHeader } from "@/components/downloads/DownloadGroupHeader";
 import { StorageUsageBar } from "@/components/downloads/StorageUsageBar";
 import { Typography } from "@/components/ui/Typography";
+import { usePapersByIds } from "@/hooks/api";
 import { useDownloads, type DownloadedPaper } from "@/hooks/useDownloads";
-import type { ClassLevel } from "@/types";
+import { PAPER_STACK_DOWNLOAD_FOLDER_NAME } from "@/lib/offline-files";
+import { usePaperStackStore } from "@/store";
+import type { Board, ClassLevel, Subject } from "@/types";
 
 type SortOption = "newest" | "subject" | "board";
 
@@ -23,7 +27,36 @@ const classes: ClassLevel[] = [9, 10, 11, 12];
 
 export default function DownloadsScreen() {
   const router = useRouter();
-  const { downloadedPapers, totalSize, deleteDownload, clearAllDownloads } = useDownloads();
+  const {
+    isHydratingDownloads,
+    refreshDownloads,
+    deleteDownload,
+    clearAllDownloads,
+    totalSize,
+  } = useDownloads();
+  const downloads = usePaperStackStore((state) => state.downloads);
+  const downloadedIds = Object.keys(downloads);
+  const { data: serverPapers = [] } = usePapersByIds(downloadedIds);
+  const downloadedPapers = downloadedIds
+    .map((paperId) => {
+      const download = downloads[paperId];
+      const serverPaper = serverPapers.find((paper) => paper.id === paperId);
+      const paper = serverPaper ?? download.paperSnapshot;
+      const board = paper?.board
+        ? ({ displayOrder: 0, isActive: true, ...paper.board } as Board)
+        : paper
+          ? getBoard(paper.boardId)
+          : undefined;
+      const subject =
+        paper?.subject
+          ? ({ displayOrder: 0, isCompulsory: false, isActive: true, ...paper.subject } as Subject)
+          : paper
+            ? getSubjectById(paper.subjectId)
+            : undefined;
+
+      return paper && board && subject ? { download, paper, board, subject } : undefined;
+    })
+    .filter((item): item is DownloadedPaper => Boolean(item));
   const [sort, setSort] = useState<SortOption>("newest");
   const [classFilter, setClassFilter] = useState<ClassLevel | undefined>();
   const sections = useMemo(() => {
@@ -67,6 +100,13 @@ export default function DownloadsScreen() {
         windowSize={10}
         removeClippedSubviews={Platform.OS === "android"}
         stickySectionHeadersEnabled
+        refreshControl={
+          <RefreshControl
+            refreshing={isHydratingDownloads}
+            onRefresh={refreshDownloads}
+            tintColor="#C96442"
+          />
+        }
         contentContainerClassName="gap-4 px-5 pb-10 pt-5"
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
@@ -76,6 +116,19 @@ export default function DownloadsScreen() {
               <Typography variant="bodySmall" color="muted">
                 Papers saved for offline reading.
               </Typography>
+            </View>
+            <View className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4 dark:border-border-dark dark:bg-card-dark">
+              <View className="h-11 w-11 items-center justify-center rounded-lg bg-muted dark:bg-muted-dark">
+                <FolderDown color="#C96442" size={22} />
+              </View>
+              <View className="flex-1 gap-1">
+                <Typography variant="body" weight="semibold">
+                  Offline folder
+                </Typography>
+                <Typography variant="caption" color="muted">
+                  {PAPER_STACK_DOWNLOAD_FOLDER_NAME}
+                </Typography>
+              </View>
             </View>
             <StorageUsageBar totalSize={totalSize} onClearAll={clearAllDownloads} />
             <View className="gap-3">

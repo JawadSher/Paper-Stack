@@ -4,8 +4,9 @@ import { Check } from "lucide-react-native";
 
 import { Button } from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
-import { boardsByProvince } from "@/constants/boards";
 import { colors } from "@/constants/theme";
+import { useBoardsByProvince } from "@/hooks/api";
+import { groupBoardsByProvince, mergeBoardsWithFallback } from "@/lib/board-fallback";
 
 interface BoardSelectorProps {
   visible: boolean;
@@ -20,6 +21,10 @@ export function BoardSelector({
   onClose,
   onSave,
 }: BoardSelectorProps) {
+  const { data: boardsByProvince = {} } = useBoardsByProvince();
+  const groupsByProvince = groupBoardsByProvince(
+    mergeBoardsWithFallback(Object.values(boardsByProvince).flat()),
+  );
   const [draft, setDraft] = useState(selectedBoardIds);
 
   useEffect(() => {
@@ -49,7 +54,7 @@ export function BoardSelector({
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View className="gap-5 pb-3">
-              {Object.entries(boardsByProvince).map(([province, provinceBoards]) => (
+              {Object.entries(groupsByProvince).map(([province, provinceBoards]) => (
                 <View key={province} className="gap-2">
                   <Typography variant="label" color="muted">
                     {province}

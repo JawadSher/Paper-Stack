@@ -3,18 +3,32 @@ import { Animated, Pressable, ScrollView, View } from "react-native";
 import { X } from "lucide-react-native";
 
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
-import { subjects } from "@/constants/subjects";
 import { colors } from "@/constants/theme";
-import type { SearchFilters } from "@/hooks/useSearch";
+import type { Board, ClassLevel, Paper, Subject } from "@/types";
+
+export interface SearchFilters {
+  boardIds: Board["id"][];
+  classes: ClassLevel[];
+  subjectIds: Subject["id"][];
+  years: number[];
+  paperTypes: NonNullable<Paper["session"]>[];
+}
 
 interface FilterChipsProps {
   filters: SearchFilters;
+  boards: Board[];
+  subjects: Subject[];
   onRemove: (key: keyof SearchFilters, value: string | number) => void;
   onClearAll: () => void;
 }
 
-export function FilterChips({ filters, onRemove, onClearAll }: FilterChipsProps) {
+export function FilterChips({
+  filters,
+  boards,
+  subjects,
+  onRemove,
+  onClearAll,
+}: FilterChipsProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(-14)).current;
   const chips = [

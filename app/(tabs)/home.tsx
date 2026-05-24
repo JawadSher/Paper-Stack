@@ -6,6 +6,7 @@ import { BoardGrid } from "@/components/home/BoardGrid";
 import { ContinueBrowsing } from "@/components/home/ContinueBrowsing";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { NewPapers } from "@/components/home/NewPapers";
+import { OfflineDownloadsShortcut } from "@/components/home/OfflineDownloadsShortcut";
 import { PopularSubjects } from "@/components/home/PopularSubjects";
 import { StatsBar } from "@/components/home/StatsBar";
 
@@ -46,6 +47,7 @@ function StaggeredSection({
 export default function HomeScreen() {
   const sections = [
     <HomeHeader key="header" hasNewPapers />,
+    <OfflineDownloadsShortcut key="offline" />,
     <StatsBar key="stats" />,
     <ContinueBrowsing key="continue" />,
     <BoardGrid key="boards" />,

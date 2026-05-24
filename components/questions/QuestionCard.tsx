@@ -3,11 +3,10 @@ import { ExternalLink } from "lucide-react-native";
 import { memo, useState } from "react";
 import { Pressable } from "react-native";
 
-import { generatePapers, getBoard, getSubjectById, getViewerParams } from "@/components/browse/browseData";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Typography } from "@/components/ui/Typography";
-import type { CommonQuestion } from "@/constants/questions";
+import type { CommonQuestion } from "@/types";
 
 import { FrequencyBar } from "./FrequencyBar";
 import { YearDots } from "./YearDots";
@@ -20,23 +19,24 @@ interface QuestionCardProps {
 function QuestionCardComponent({ question, boardId }: QuestionCardProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const years = question.years ?? question.yearsAppeared;
 
   const openPaper = () => {
-    const board = getBoard(boardId ?? question.paperRefs[0]?.boardId);
-    const subject = getSubjectById(question.subjectId);
+    const paperId = question.questionPaperLinks?.[0]?.paperId;
 
-    if (!board || !subject) {
+    if (!paperId) {
       return;
     }
 
-    const year = question.paperRefs[0]?.year ?? question.years[0];
-    const paper =
-      generatePapers(board, question.classId, subject).find((item) => item.year === year) ??
-      generatePapers(board, question.classId, subject)[0];
-
     router.push({
       pathname: "/(stack)/viewer/[paperId]",
-      params: getViewerParams(paper, subject, board),
+      params: {
+        paperId,
+        boardId: boardId ?? question.boardId,
+        subjectId: question.subjectId,
+        classLevel: String(question.classLevel),
+        year: String(question.questionPaperLinks?.[0]?.year ?? question.yearsAppeared[0] ?? ""),
+      },
     } as never);
   };
 
@@ -45,11 +45,11 @@ function QuestionCardComponent({ question, boardId }: QuestionCardProps) {
       <Pressable accessibilityRole="button" onPress={() => setExpanded((value) => !value)} className="gap-3">
         <Badge label={question.chapterName} size="sm" />
         <Typography variant="body" weight="medium" numberOfLines={expanded ? undefined : 3}>
-          {question.text}
+          {question.text ?? question.questionText}
         </Typography>
       </Pressable>
-      <FrequencyBar frequency={question.years.length} />
-      <YearDots years={question.years} />
+      <FrequencyBar frequency={years.length} />
+      <YearDots years={years} />
       <Pressable
         accessibilityRole="button"
         onPress={openPaper}

@@ -5,13 +5,14 @@ import { ChevronDown } from "lucide-react-native";
 import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { PaperCard } from "@/components/papers/PaperCard";
 import { Typography } from "@/components/ui/Typography";
-import type { SearchFilters, SearchPaperResult } from "@/hooks/useSearch";
 import { colors } from "@/constants/theme";
+import type { SearchFilters } from "@/components/search/FilterChips";
+import type { Board, Paper, Subject } from "@/types";
 
 type SortOption = "newest" | "oldest" | "board";
 
 interface SearchResultsProps {
-  results: SearchPaperResult[];
+  results: Paper[];
   totalCount: number;
   isLoading: boolean;
   filters: SearchFilters;
@@ -19,7 +20,7 @@ interface SearchResultsProps {
 
 type Row =
   | { type: "header"; id: string; title: string }
-  | { type: "paper"; id: string; result: SearchPaperResult };
+  | { type: "paper"; id: string; paper: Paper };
 
 const sortLabels: Record<SortOption, string> = {
   newest: "Newest first",
@@ -34,30 +35,35 @@ export function SearchResults({ results, totalCount, isLoading, filters }: Searc
   const rows = useMemo<Row[]>(() => {
     const sorted = [...results].sort((left, right) => {
       if (sort === "oldest") {
-        return left.paper.year - right.paper.year;
+        return left.year - right.year;
       }
 
       if (sort === "board") {
-        return left.board.shortName.localeCompare(right.board.shortName);
+        return (left.board?.shortName ?? "").localeCompare(right.board?.shortName ?? "");
       }
 
-      return right.paper.year - left.paper.year;
+      return right.year - left.year;
     });
 
     if (!groupedBySubject) {
-      return sorted.map((result) => ({ type: "paper", id: result.paper.id, result }));
+      return sorted.map((paper) => ({ type: "paper", id: paper.id, paper }));
     }
 
     const seen = new Set<string>();
     const output: Row[] = [];
 
-    sorted.forEach((result) => {
-      if (!seen.has(result.subject.id)) {
-        seen.add(result.subject.id);
-        output.push({ type: "header", id: `header-${result.subject.id}`, title: result.subject.name });
+    sorted.forEach((paper) => {
+      const subjectId = paper.subject?.id ?? paper.subjectId;
+      if (!seen.has(subjectId)) {
+        seen.add(subjectId);
+        output.push({
+          type: "header",
+          id: `header-${subjectId}`,
+          title: paper.subject?.name ?? "Unknown Subject",
+        });
       }
 
-      output.push({ type: "paper", id: result.paper.id, result });
+      output.push({ type: "paper", id: paper.id, paper });
     });
 
     return output;
@@ -129,9 +135,9 @@ export function SearchResults({ results, totalCount, isLoading, filters }: Searc
             </Typography>
           ) : (
             <PaperCard
-              paper={item.result.paper}
-              board={item.result.board}
-              subject={item.result.subject}
+              paper={item.paper}
+              board={item.paper.board as Board}
+              subject={item.paper.subject as Subject | undefined}
             />
           )
         }

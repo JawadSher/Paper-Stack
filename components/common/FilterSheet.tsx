@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Modal, Pressable, ScrollView, View } from "react-native";
 
-import { boards } from "@/constants/boards";
 import type { Board, ClassLevel, Paper } from "@/types";
 
 import { BoardBadge } from "../papers/BoardBadge";
@@ -18,6 +17,7 @@ export interface PaperFilters {
 
 export interface FilterSheetProps {
   visible: boolean;
+  boards: Board[];
   onClose: () => void;
   filters: PaperFilters;
   onApplyFilters: (filters: PaperFilters) => void;
@@ -31,7 +31,13 @@ function toggleValue<T>(values: T[], value: T) {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-export function FilterSheet({ visible, onClose, filters, onApplyFilters }: FilterSheetProps) {
+export function FilterSheet({
+  visible,
+  boards,
+  onClose,
+  filters,
+  onApplyFilters,
+}: FilterSheetProps) {
   const translateY = useRef(new Animated.Value(420)).current;
   const [draft, setDraft] = useState(filters);
 

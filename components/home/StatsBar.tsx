@@ -5,6 +5,7 @@ import { boards } from "@/constants/boards";
 import { subjects } from "@/constants/subjects";
 
 export function StatsBar() {
+  // TODO: replace with live counts from Supabase aggregate query
   const boardCount = boards.length;
   const subjectCount = subjects.length;
   const stats = [

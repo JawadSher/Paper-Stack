@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Share, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getBoard, getClassLevel, getSubjectById } from "@/components/browse/browseData";
+import { getClassLevel } from "@/components/browse/browseData";
 import { NetworkError } from "@/components/common/NetworkError";
 import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { BoardBadge } from "@/components/papers/BoardBadge";
@@ -14,13 +14,18 @@ import { QuestionsList } from "@/components/questions/QuestionsList";
 import { SubjectHeader } from "@/components/questions/SubjectHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
-import { subjects } from "@/constants/subjects";
 import { colors } from "@/constants/theme";
-import { useCommonQuestions, type MinFrequency } from "@/hooks/useCommonQuestions";
+import {
+  useAllSubjects,
+  useBoard,
+  useBoards,
+  useCommonQuestionsGrouped,
+} from "@/hooks/api";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { usePaperStackStore } from "@/store";
 import type { ClassLevel } from "@/types";
+
+type MinFrequency = 2 | 3 | 4 | 5;
 
 const frequencyOptions: { label: string; value: MinFrequency }[] = [
   { label: "2+ years", value: 2 },
@@ -47,27 +52,35 @@ export default function CommonQuestionsBySubjectScreen() {
   const selectedPreferenceBoard = usePaperStackStore(
     (state) => state.userPreferences.selectedBoards?.[0] ?? state.userPreferences.selectedBoard,
   );
+  const userPreferences = usePaperStackStore((state) => state.userPreferences);
   const [selectedBoardId, setSelectedBoardId] = useState(routeBoardId ?? selectedPreferenceBoard);
   const [selectedClass, setSelectedClass] = useState<ClassLevel | undefined>(initialClass);
   const [minFrequency, setMinFrequency] = useState<MinFrequency>(2);
   const { isConnected } = useNetworkStatus();
-  const baseSubject = getSubjectById(subjectId);
+  const { data: boards = [] } = useBoards();
+  const { data: allSubjects = [] } = useAllSubjects();
+  const { data: selectedBoard } = useBoard(selectedBoardId ?? "");
+  const baseSubject = allSubjects.find((subject) => subject.id === subjectId);
   const sameNameSubjects = useMemo(
-    () => subjects.filter((subject) => subject.name === baseSubject?.name),
-    [baseSubject?.name],
+    () => allSubjects.filter((subject) => subject.name === baseSubject?.name),
+    [allSubjects, baseSubject?.name],
   );
   const resolvedClass = selectedClass ?? baseSubject?.classLevel;
   const resolvedSubject =
     sameNameSubjects.find((subject) => subject.classLevel === resolvedClass) ?? baseSubject;
-  const selectedBoard = getBoard(selectedBoardId);
   const {
     groupedQuestions,
     totalAnalyzed,
-    repeatCount,
     mostRepeatedTopic,
-    questions,
     isLoading,
-  } = useCommonQuestions(resolvedSubject?.id, selectedBoardId, resolvedClass, minFrequency);
+    data: questions = [],
+  } = useCommonQuestionsGrouped({
+    subjectId: resolvedSubject?.id,
+    boardId: selectedBoardId ?? userPreferences.selectedBoard,
+    classLevel: resolvedClass,
+    minFrequency,
+  });
+  const repeatCount = questions.length;
   const showBoardSelector = !routeBoardId;
   const showClassToggle = sameNameSubjects.length > 1;
 
@@ -88,7 +101,12 @@ export default function CommonQuestionsBySubjectScreen() {
       `Repeat questions found: ${repeatCount}`,
       `Most repeated topic: ${mostRepeatedTopic}`,
       "",
-      ...questions.slice(0, 8).map((question, index) => `${index + 1}. (${question.years.length}/5) ${question.text}`),
+      ...questions
+        .slice(0, 8)
+        .map(
+          (question, index) =>
+            `${index + 1}. (${(question.years ?? question.yearsAppeared).length}/5) ${question.text ?? question.questionText}`,
+        ),
     ].join("\n");
 
     if (await Sharing.isAvailableAsync()) {
@@ -110,7 +128,7 @@ export default function CommonQuestionsBySubjectScreen() {
       >
         <View className="flex-row items-start gap-3">
           <View className="flex-1">
-            <SubjectHeader subject={resolvedSubject} board={selectedBoard} classId={resolvedClass} />
+            <SubjectHeader subject={resolvedSubject} board={selectedBoard ?? undefined} classId={resolvedClass} />
           </View>
           <Pressable
             accessibilityRole="button"

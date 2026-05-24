@@ -3,7 +3,7 @@ import { View } from "react-native";
 
 import type { Board, ClassLevel, Subject } from "@/types";
 
-import { getPaperCount, sortSubjects } from "./browseData";
+import { sortSubjects } from "./browseData";
 import { SubjectCard } from "./SubjectCard";
 
 interface SubjectGridProps {
@@ -21,7 +21,7 @@ export function SubjectGrid({ board, classLevel, subjects }: SubjectGridProps) {
         <View key={subject.id} className="w-[48%]">
           <SubjectCard
             subject={subject}
-            paperCount={getPaperCount(board, classLevel, subject)}
+            accentColor={board.color}
             onPress={() =>
               router.push({
                 pathname: "/(stack)/boards/[boardId]/[classId]/[subjectId]",

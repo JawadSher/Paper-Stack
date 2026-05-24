@@ -1,4 +1,3 @@
-import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
 import { ChevronRight, User } from "lucide-react-native";
 import { Alert, Pressable, ScrollView, View } from "react-native";
@@ -14,6 +13,7 @@ import { Typography } from "@/components/ui/Typography";
 import { boards } from "@/constants/boards";
 import { formatBytes } from "@/components/downloads/StorageUsageBar";
 import { useDownloads } from "@/hooks/useDownloads";
+import { deletePaperStackDownloadDirectory } from "@/lib/offline-files";
 import { useToast } from "@/components/common/Toast";
 import { usePaperStackStore } from "@/store";
 import type { ClassLevel, TextSizePreference } from "@/types";
@@ -51,9 +51,7 @@ export default function ProfileScreen() {
 
   const clearCache = async () => {
     try {
-      await FileSystem.deleteAsync(`${FileSystem.documentDirectory}papers/`, {
-        idempotent: true,
-      });
+      await deletePaperStackDownloadDirectory();
       clearDownloads();
       showToast({ type: "success", title: "Cache cleared successfully" });
     } catch {

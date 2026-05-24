@@ -1,3 +1,4 @@
+// DEPRECATED — data now comes from Supabase
 import type { Board, ClassLevel, Paper, Subject } from "@/types";
 
 export interface CommonQuestion {

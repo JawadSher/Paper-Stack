@@ -1,9 +1,12 @@
+// OFFLINE FALLBACK ONLY — primary data source is Supabase
 import type { Board } from "@/types";
 import { colors } from "./theme";
 
 const classes = [9, 10, 11, 12] as const;
 
-export const boards: Board[] = [
+const boardSeed: Array<
+  Omit<Board, "displayOrder" | "isActive" | "websiteUrl">
+> = [
   {
     id: "fbise",
     name: "Federal Board of Intermediate and Secondary Education",
@@ -239,6 +242,13 @@ export const boards: Board[] = [
     color: colors.boards.gilgitBaltistan,
   },
 ];
+
+export const boards: Board[] = boardSeed.map((board, index) => ({
+  ...board,
+  websiteUrl: null,
+  displayOrder: index + 1,
+  isActive: true,
+}));
 
 export const boardsByProvince = boards.reduce<Record<string, Board[]>>(
   (groups, board) => {

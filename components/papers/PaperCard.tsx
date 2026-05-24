@@ -4,9 +4,9 @@ import { Bookmark } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 import { colors } from "@/constants/theme";
+import { useDownload } from "@/hooks/useDownload";
 import { usePaperStackStore } from "@/store";
 import type { Board, Paper, Subject } from "@/types";
-import { getViewerParams } from "@/components/browse/browseData";
 
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
@@ -38,6 +38,7 @@ function PaperCardComponent({
   onPress,
 }: PaperCardProps) {
   const router = useRouter();
+  const { startDownload } = useDownload(paper);
   const bookmarked = usePaperStackStore((state) => state.bookmarkedPapers.has(paper.id));
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
 
@@ -49,7 +50,19 @@ function PaperCardComponent({
 
     router.push({
       pathname: "/(stack)/viewer/[paperId]",
-      params: getViewerParams(paper, subject, board),
+      params: {
+        paperId: paper.id,
+        pdfUrl: paper.pdfUrl ?? undefined,
+        title: paper.title,
+        boardId: paper.boardId,
+        boardName: board.shortName,
+        subjectId: paper.subjectId,
+        subjectName: subject?.name,
+        classLevel: String(paper.classLevel),
+        year: String(paper.year),
+        session: paper.session,
+        fileSizeBytes: paper.fileSizeBytes ? String(paper.fileSizeBytes) : undefined,
+      },
     } as never);
   };
 
@@ -105,7 +118,7 @@ function PaperCardComponent({
         <DownloadButton
           paperId={paper.id}
           fileName={`${paper.title || paper.id}.pdf`}
-          onDownload={onDownload}
+          onDownload={onDownload ?? (() => startDownload())}
         />
       </View>
     </Card>

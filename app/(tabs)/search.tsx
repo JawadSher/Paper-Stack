@@ -4,18 +4,36 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { FilterSheet, type PaperFilters } from "@/components/common/FilterSheet";
-import { FilterChips } from "@/components/search/FilterChips";
+import { Button } from "@/components/ui/Button";
+import { FilterChips, type SearchFilters } from "@/components/search/FilterChips";
 import { RecentSearches, saveRecentSearch } from "@/components/search/RecentSearches";
 import { SearchEmpty } from "@/components/search/SearchEmpty";
 import { SearchHeader } from "@/components/search/SearchHeader";
 import { SearchResults } from "@/components/search/SearchResults";
-import { subjects } from "@/constants/subjects";
 import {
-  emptySearchFilters,
-  getActiveFilterCount,
-  type SearchFilters,
-  useSearch,
-} from "@/hooks/useSearch";
+  useAllSubjects,
+  useBoards,
+  useSearchPapers,
+  type MobileSearchFilters,
+} from "@/hooks/api";
+
+const emptySearchFilters: SearchFilters = {
+  boardIds: [],
+  classes: [],
+  subjectIds: [],
+  years: [],
+  paperTypes: [],
+};
+
+function getActiveFilterCount(filters: SearchFilters) {
+  return (
+    filters.boardIds.length +
+    filters.classes.length +
+    filters.subjectIds.length +
+    filters.years.length +
+    filters.paperTypes.length
+  );
+}
 
 function toPaperFilters(filters: SearchFilters): PaperFilters {
   return {
@@ -23,6 +41,16 @@ function toPaperFilters(filters: SearchFilters): PaperFilters {
     classes: filters.classes,
     years: filters.years,
     paperTypes: filters.paperTypes,
+  };
+}
+
+function toMobileFilters(filters: SearchFilters): MobileSearchFilters {
+  return {
+    boardId: filters.boardIds[0],
+    subjectId: filters.subjectIds[0],
+    classLevel: filters.classes[0],
+    year: filters.years[0],
+    session: filters.paperTypes[0],
   };
 }
 
@@ -41,10 +69,25 @@ export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<SearchFilters>(emptySearchFilters);
   const [filterVisible, setFilterVisible] = useState(false);
-  const { results, isLoading, totalCount } = useSearch(query, filters);
+  const [page, setPage] = useState(1);
+  const { data: allBoards = [] } = useBoards();
+  const { data: allSubjects = [] } = useAllSubjects();
+  const mobileFilters = useMemo(() => toMobileFilters(filters), [filters]);
+  const { data: searchResult, isLoading, isFetching } = useSearchPapers(
+    query,
+    mobileFilters,
+    page,
+  );
+  const results = searchResult?.data ?? [];
+  const totalCount = searchResult?.count ?? 0;
+  const hasMore = searchResult?.hasMore ?? false;
   const activeFilterCount = getActiveFilterCount(filters);
   const hasQuery = query.trim().length > 0;
   const hasSearchState = hasQuery || activeFilterCount > 0;
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, filters]);
 
   useEffect(() => {
     const subjectParam = Array.isArray(params.subject) ? params.subject[0] : params.subject;
@@ -53,7 +96,7 @@ export default function SearchScreen() {
       return;
     }
 
-    const subjectMatches = subjects
+    const subjectMatches = allSubjects
       .filter((subject) => subject.name.toLowerCase() === subjectParam.toLowerCase())
       .map((subject) => subject.id);
 
@@ -62,7 +105,7 @@ export default function SearchScreen() {
       ...current,
       subjectIds: subjectMatches,
     }));
-  }, [params.subject]);
+  }, [allSubjects, params.subject]);
 
   useEffect(() => {
     const q = Array.isArray(params.q) ? params.q[0] : params.q;
@@ -108,20 +151,35 @@ export default function SearchScreen() {
             onSubmit={submitSearch}
             onOpenFilters={() => setFilterVisible(true)}
           />
-          <FilterChips filters={filters} onRemove={removeFilter} onClearAll={clearFilters} />
+          <FilterChips
+            filters={filters}
+            boards={allBoards}
+            subjects={allSubjects}
+            onRemove={removeFilter}
+            onClearAll={clearFilters}
+          />
           {hasSearchState ? (
             totalCount === 0 && !isLoading ? (
               <SearchEmpty query={query} filters={filters} onClearFilters={clearFilters} />
             ) : (
-              <SearchResults
-                results={results}
-                totalCount={totalCount}
-                isLoading={isLoading}
-                filters={filters}
-              />
+              <View className="gap-4">
+                <SearchResults
+                  results={results}
+                  totalCount={totalCount}
+                  isLoading={isLoading}
+                  filters={filters}
+                />
+                <Button
+                  onPress={() => setPage((current) => current + 1)}
+                  disabled={!hasMore || isFetching}
+                >
+                  Load more
+                </Button>
+              </View>
             )
           ) : (
             <RecentSearches
+              boards={allBoards}
               onSelectSearch={(term) => {
                 setQuery(term);
                 saveRecentSearch(term);
@@ -138,6 +196,7 @@ export default function SearchScreen() {
         </ScrollView>
         <FilterSheet
           visible={filterVisible}
+          boards={allBoards}
           onClose={() => setFilterVisible(false)}
           filters={paperFilters}
           onApplyFilters={(nextFilters) =>

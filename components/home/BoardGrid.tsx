@@ -3,9 +3,10 @@ import { BookOpen } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { Animated, View } from "react-native";
 
-import { EmptyState } from "@/components/common/EmptyState";
+import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
+import { useBoards } from "@/hooks/api";
+import { mergeBoardsWithFallback } from "@/lib/board-fallback";
 import { usePaperStackStore } from "@/store";
 
 import { BoardCard } from "./BoardCard";
@@ -49,15 +50,16 @@ function AnimatedBoardItem({
 }
 
 export function BoardGrid() {
-  const preferences = usePaperStackStore((state) => state.userPreferences);
-  const selectedIds = preferences.selectedBoards?.length
-    ? preferences.selectedBoards
-    : preferences.selectedBoard
-      ? [preferences.selectedBoard]
+  const { data: allBoards = [], isLoading } = useBoards();
+  const { userPreferences } = usePaperStackStore();
+  // OFFLINE FALLBACK — remove when confident in connectivity
+  const boardsToUse = mergeBoardsWithFallback(allBoards);
+  const selectedIds = userPreferences.selectedBoards?.length
+    ? userPreferences.selectedBoards
+    : userPreferences.selectedBoard
+      ? [userPreferences.selectedBoard]
       : [];
-  const selectedBoards = selectedIds
-    .map((id) => boards.find((board) => board.id === id))
-    .filter(Boolean);
+  const selectedBoards = boardsToUse.filter((board) => selectedIds.includes(board.id));
 
   return (
     <View className="gap-4">
@@ -69,22 +71,36 @@ export function BoardGrid() {
           </Typography>
         </Link>
       </View>
-      {selectedBoards.length ? (
+      {isLoading ? (
+        <View className="flex-row flex-wrap gap-3">
+          {[0, 1].map((item) => (
+            <View key={item} className="w-[48%]">
+              <SkeletonLoader variant="boardCard" />
+            </View>
+          ))}
+        </View>
+      ) : selectedBoards.length ? (
         <View className="flex-row flex-wrap gap-3">
           {selectedBoards.map((board, index) =>
             board ? (
               <AnimatedBoardItem key={board.id} index={index}>
-                <BoardCard board={board} paperCount={180 - index * 12} />
+                <BoardCard board={board} />
               </AnimatedBoardItem>
             ) : null,
           )}
         </View>
       ) : (
-        <EmptyState
-          icon={BookOpen}
-          title="No boards selected"
-          subtitle="Pick boards in onboarding or profile to personalize this grid."
-        />
+        <View className="min-h-36 items-center justify-center gap-3 rounded-lg border border-border bg-card px-5 py-6 dark:border-border-dark dark:bg-card-dark">
+          <BookOpen color="#C96442" size={28} />
+          <View className="gap-1">
+            <Typography variant="body" weight="semibold" align="center">
+              No boards selected
+            </Typography>
+            <Typography variant="caption" color="muted" align="center">
+              Pick boards in onboarding or profile to personalize this grid.
+            </Typography>
+          </View>
+        </View>
       )}
     </View>
   );

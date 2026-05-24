@@ -2,11 +2,13 @@ import Constants from "expo-constants";
 import type { ComponentType } from "react";
 import { useEffect, useMemo } from "react";
 import { Linking, Pressable, View } from "react-native";
+import { ExternalLink, FileText } from "lucide-react-native";
 
 import { Typography } from "@/components/ui/Typography";
 
 interface PdfDocumentProps {
   sourceUri: string;
+  accentColor?: string;
   page: number;
   scale: number;
   onLoadComplete: (pages: number) => void;
@@ -29,6 +31,7 @@ type NativePdfProps = {
 
 export function PdfDocument({
   sourceUri,
+  accentColor = "#C96442",
   page,
   scale,
   onLoadComplete,
@@ -58,25 +61,35 @@ export function PdfDocument({
 
   if (!NativePdf) {
     return (
-      <View className="flex-1 items-center justify-center gap-4 px-8">
-        <View className="gap-2">
-          <Typography variant="heading3" align="center">
-            PDF preview needs a development build
-          </Typography>
-          <Typography variant="bodySmall" color="muted" align="center">
-            Expo Go cannot load react-native-pdf native modules. Open the file externally or use a
-            custom dev build for in-app PDF rendering.
-          </Typography>
+      <View className="flex-1 items-center justify-center px-5 pb-36">
+        <View className="w-full max-w-md items-center gap-5 rounded-lg border border-border bg-card p-6 dark:border-border-dark dark:bg-card-dark">
+          <View
+            className="h-16 w-16 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: `${accentColor}18` }}
+          >
+            <FileText color={accentColor} size={30} />
+          </View>
+          <View className="gap-2">
+            <Typography variant="heading3" align="center">
+              Open PDF preview
+            </Typography>
+            <Typography variant="bodySmall" color="muted" align="center">
+              Expo Go cannot render the native PDF preview. Open the paper externally, or use a
+              development build for in-app reading.
+            </Typography>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => Linking.openURL(sourceUri)}
+            className="h-11 flex-row items-center justify-center gap-2 rounded-full px-5 active:opacity-80"
+            style={{ backgroundColor: accentColor }}
+          >
+            <ExternalLink color="#FFFFFF" size={17} />
+            <Typography variant="bodySmall" weight="semibold" className="text-white dark:text-white">
+              Open PDF
+            </Typography>
+          </Pressable>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => Linking.openURL(sourceUri)}
-          className="rounded-lg bg-primary px-4 py-3 active:opacity-80 dark:bg-primary-dark"
-        >
-          <Typography variant="bodySmall" weight="semibold" className="text-white dark:text-white">
-            Open PDF
-          </Typography>
-        </Pressable>
       </View>
     );
   }

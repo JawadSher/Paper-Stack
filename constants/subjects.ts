@@ -1,4 +1,7 @@
+// OFFLINE FALLBACK ONLY — primary data source is Supabase
 import type { Subject } from "@/types";
+
+const compulsorySubjects = new Set(["English", "Urdu", "Islamiat", "Pakistan Studies"]);
 
 const matricSubjects = [
   "Physics",
@@ -29,9 +32,13 @@ const intermediateSubjects = [
 ] as const;
 
 const toSubjects = (classLevel: 9 | 10 | 11 | 12, names: readonly string[]) =>
-  names.map<Subject>((name) => ({
+  names.map<Subject>((name, index) => ({
     id: `class-${classLevel}-${name.toLowerCase().split(" ").join("-")}`,
     name,
+    icon: name.toLowerCase().split(" ").join("-"),
+    displayOrder: index + 1,
+    isCompulsory: compulsorySubjects.has(name),
+    isActive: true,
     classLevel,
   }));
 

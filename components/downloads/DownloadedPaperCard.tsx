@@ -4,7 +4,6 @@ import { Pressable, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { FileText, Trash2 } from "lucide-react-native";
 
-import { getViewerParams } from "@/components/browse/browseData";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Typography } from "@/components/ui/Typography";
@@ -34,13 +33,25 @@ function relativeDate(value: string) {
 
 export function DownloadedPaperCard({ item, onDelete }: DownloadedPaperCardProps) {
   const router = useRouter();
+  const accentColor = item.board.color || "#C96442";
 
   const openPaper = () => {
     router.push({
       pathname: "/(stack)/viewer/[paperId]",
       params: {
-        ...getViewerParams(item.paper, item.subject, item.board),
+        paperId: item.paper.id,
         pdfUrl: item.download.localUri || item.paper.pdfUrl,
+        title: item.paper.title,
+        boardId: item.paper.boardId,
+        boardName: item.board.shortName,
+        subjectId: item.paper.subjectId,
+        subjectName: item.subject.name,
+        classLevel: String(item.paper.classLevel),
+        year: String(item.paper.year),
+        session: item.paper.session,
+        fileSizeBytes: item.paper.fileSizeBytes
+          ? String(item.paper.fileSizeBytes)
+          : undefined,
       },
     } as never);
   };
@@ -71,10 +82,14 @@ export function DownloadedPaperCard({ item, onDelete }: DownloadedPaperCardProps
         onPress={openPaper}
         onLongPress={share}
         className="gap-3 rounded-lg border border-border bg-card p-4 active:opacity-90 dark:border-border-dark dark:bg-card-dark"
+        style={{ borderLeftWidth: 4, borderLeftColor: accentColor }}
       >
         <View className="flex-row items-start gap-3">
-          <View className="h-11 w-11 items-center justify-center rounded-lg bg-muted dark:bg-muted-dark">
-            <FileText color="#C96442" size={21} />
+          <View
+            className="h-11 w-11 items-center justify-center rounded-lg"
+            style={{ backgroundColor: `${accentColor}18` }}
+          >
+            <FileText color={accentColor} size={21} />
           </View>
           <View className="flex-1 gap-2">
             <Typography variant="body" weight="semibold" numberOfLines={2}>
@@ -92,7 +107,7 @@ export function DownloadedPaperCard({ item, onDelete }: DownloadedPaperCardProps
           </View>
         </View>
         <View className="items-end">
-          <Button size="sm" onPress={openPaper}>
+          <Button size="sm" onPress={openPaper} style={{ backgroundColor: accentColor }}>
             Open
           </Button>
         </View>

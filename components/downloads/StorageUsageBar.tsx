@@ -8,9 +8,17 @@ interface StorageUsageBarProps {
   onClearAll: () => void;
 }
 
-export function formatBytes(bytes: number) {
+export function formatBytes(bytes?: number | null) {
+  if (!bytes || bytes <= 0) {
+    return "0 MB";
+  }
+
   if (bytes >= 1024 * 1024 * 1024) {
     return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   }
 
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;

@@ -5,12 +5,13 @@ import { Pressable, ScrollView, View } from "react-native";
 
 import { BoardBadge } from "@/components/papers/BoardBadge";
 import { Typography } from "@/components/ui/Typography";
-import { boards } from "@/constants/boards";
 import { colors } from "@/constants/theme";
+import type { Board } from "@/types";
 
 export const recentSearchesKey = "paper-stack:recent-searches";
 
 interface RecentSearchesProps {
+  boards: Board[];
   onSelectSearch: (term: string) => void;
   onSelectBoard: (boardId: string) => void;
 }
@@ -31,7 +32,7 @@ export async function saveRecentSearch(term: string) {
   await AsyncStorage.setItem(recentSearchesKey, JSON.stringify(next));
 }
 
-export function RecentSearches({ onSelectSearch, onSelectBoard }: RecentSearchesProps) {
+export function RecentSearches({ boards, onSelectSearch, onSelectBoard }: RecentSearchesProps) {
   const [recent, setRecent] = useState<string[]>([]);
 
   const loadRecent = async () => {

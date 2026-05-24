@@ -1,12 +1,13 @@
 import { View } from "react-native";
 
 import { Typography } from "@/components/ui/Typography";
-import { questionYears } from "@/constants/questions";
 import { colors } from "@/constants/theme";
 
 interface YearDotsProps {
   years: number[];
 }
+
+const questionYears = [2019, 2020, 2021, 2022, 2023, 2024];
 
 export function YearDots({ years }: YearDotsProps) {
   return (

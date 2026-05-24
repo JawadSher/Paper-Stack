@@ -4,22 +4,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 
+import { NetworkError } from "@/components/common/NetworkError";
 import { SearchBar } from "@/components/common/SearchBar";
+import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import { Badge } from "@/components/ui/Badge";
 import { Typography } from "@/components/ui/Typography";
-import { boardsByProvince } from "@/constants/boards";
 import { colors } from "@/constants/theme";
-
-import { getPaperCount } from "@/components/browse/browseData";
+import { useBoardsByProvince } from "@/hooks/api";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 export default function AllBoardsScreen() {
   const router = useRouter();
+  const { data: boardsByProvince = {}, isLoading, error, refetch } = useBoardsByProvince();
+  const { isConnected } = useNetworkStatus();
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
-  const provinces = Object.keys(boardsByProvince);
   const filteredGroups = useMemo(
-    () =>
-      provinces
+    () => {
+      const provinces = Object.keys(boardsByProvince);
+
+      return provinces
         .map((province) => ({
           province,
           boards: boardsByProvince[province].filter((board) => {
@@ -30,11 +34,48 @@ export default function AllBoardsScreen() {
             return `${board.name} ${board.shortName} ${board.province}`
               .toLowerCase()
               .includes(normalizedQuery);
-          }),
+            }),
         }))
-        .filter((group) => group.boards.length > 0),
-    [normalizedQuery, provinces],
+        .filter((group) => group.boards.length > 0);
+    },
+    [boardsByProvince, normalizedQuery],
   );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-3 px-5 pb-10 pt-5"
+          showsVerticalScrollIndicator={false}
+        >
+          {[0, 1, 2, 3, 4, 5].map((item) => (
+            <SkeletonLoader key={item} variant="boardCard" />
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && !isConnected && Object.keys(boardsByProvince).length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+        <NetworkError onRetry={refetch} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error && Object.keys(boardsByProvince).length === 0) {
+    return (
+      <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
+        <NetworkError
+          title="Could not load boards"
+          subtitle={error instanceof Error ? error.message : "Check your Supabase credentials."}
+          onRetry={refetch}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
@@ -77,10 +118,10 @@ export default function AllBoardsScreen() {
                       {board.shortName}
                     </Typography>
                     <Badge label={board.province} color={board.color} size="sm" />
-                    <Badge label={`${getPaperCount(board)} papers`} size="sm" />
+                    {/* TODO: show paper counts when board._count.papers is available */}
                   </View>
                 </View>
-                <ChevronRight color={colors.mutedForeground.light} size={20} />
+                <ChevronRight color={board.color ?? colors.mutedForeground.light} size={20} />
               </Pressable>
             ))}
           </View>

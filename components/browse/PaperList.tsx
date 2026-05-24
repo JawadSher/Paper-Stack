@@ -11,11 +11,18 @@ import { PaperListItem } from "./PaperListItem";
 interface PaperListProps {
   papers: Paper[];
   board: Board;
+  accentColor?: string;
   selectedYear: YearFilter;
   selectedType: PaperTypeFilter;
 }
 
-export function PaperList({ papers, board, selectedYear, selectedType }: PaperListProps) {
+export function PaperList({
+  papers,
+  board,
+  accentColor = board.color,
+  selectedYear,
+  selectedType,
+}: PaperListProps) {
   const [refreshing, setRefreshing] = useState(false);
   const filteredPapers = useMemo(
     () =>
@@ -52,7 +59,9 @@ export function PaperList({ papers, board, selectedYear, selectedType }: PaperLi
           subtitle="Try a different year or paper type."
         />
       }
-      renderItem={({ item }) => <PaperListItem paper={item} board={board} />}
+      renderItem={({ item }) => (
+        <PaperListItem paper={item} board={board} accentColor={accentColor} />
+      )}
     />
   );
 }

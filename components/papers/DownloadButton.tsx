@@ -21,7 +21,7 @@ const strokeWidth = 3;
 const radius = (ringSize - strokeWidth) / 2;
 const circumference = 2 * Math.PI * radius;
 
-export function DownloadButton({ paperId, fileName, onDownload }: DownloadButtonProps) {
+export function DownloadButton({ paperId, onDownload }: DownloadButtonProps) {
   const downloads = usePaperStackStore((state) => state.downloads);
   const progress = usePaperStackStore((state) => state.downloadProgress[paperId] ?? 0);
   const addDownload = usePaperStackStore((state) => state.addDownload);
@@ -81,15 +81,11 @@ export function DownloadButton({ paperId, fileName, onDownload }: DownloadButton
       setError(false);
       setDownloadProgress(paperId, 0.08);
       const result = await onDownload?.(paperId);
+      if (!result) {
+        throw new Error("Download did not return a saved file.");
+      }
       setDownloadProgress(paperId, 1);
-      addDownload(
-        result ?? {
-          paperId,
-          localUri: "",
-          fileName: fileName ?? `${paperId}.pdf`,
-          downloadedAt: new Date().toISOString(),
-        },
-      );
+      addDownload(result);
       clearDownloadProgress(paperId);
     } catch {
       setError(true);

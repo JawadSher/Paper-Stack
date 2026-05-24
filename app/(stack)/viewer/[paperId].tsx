@@ -11,14 +11,15 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { SkeletonLoader } from "@/components/common/SkeletonLoader";
 import {
   getBoard,
-  getPaperById,
   getSubjectById,
 } from "@/components/browse/browseData";
 import { DownloadProgress } from "@/components/viewer/DownloadProgress";
 import { PdfDocument } from "@/components/viewer/PdfDocument";
 import { ViewerHeader } from "@/components/viewer/ViewerHeader";
 import { ViewerToolbar } from "@/components/viewer/ViewerToolbar";
+import { Typography } from "@/components/ui/Typography";
 import { boards } from "@/constants/boards";
+import { usePaper, useTrackAnalytics } from "@/hooks/api";
 import { useBookmark } from "@/hooks/useBookmark";
 import { useDownload } from "@/hooks/useDownload";
 import { usePaperStackStore } from "@/store";
@@ -57,24 +58,23 @@ export default function PdfViewerScreen() {
     fileSizeBytes?: string;
   }>();
   const paperId = toStringValue(params.paperId) ?? "paper";
-  const storedPaper = getPaperById(paperId);
+  const { data: serverPaper, isLoading: paperLoading } = usePaper(paperId);
   const fallbackBoard = getBoard(params.boardId) ?? boards[0];
   const fallbackSubject = getSubjectById(params.subjectId);
-  const paper = useMemo<Paper>(
-    () =>
-      storedPaper ?? {
-        id: paperId,
-        title: toStringValue(params.title) ?? "Past Paper",
-        boardId: fallbackBoard.id,
-        subjectId: toStringValue(params.subjectId) ?? fallbackSubject?.id ?? "subject",
-        classLevel: getClassLevel(params.classLevel),
-        year: Number(toStringValue(params.year)) || 2024,
-        session: params.session ?? "annual",
-        pdfUrl: toStringValue(params.pdfUrl) ?? "",
-        fileSizeBytes: Number(toStringValue(params.fileSizeBytes)) || undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
+  const fallbackPaper = useMemo<Paper>(
+    () => ({
+      id: paperId,
+      title: toStringValue(params.title) ?? "Past Paper",
+      boardId: fallbackBoard.id,
+      subjectId: toStringValue(params.subjectId) ?? fallbackSubject?.id ?? "subject",
+      classLevel: getClassLevel(params.classLevel),
+      year: Number(toStringValue(params.year)) || 2024,
+      session: params.session ?? "annual",
+      pdfUrl: toStringValue(params.pdfUrl) ?? "",
+      fileSizeBytes: Number(toStringValue(params.fileSizeBytes)) || undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
     [
       fallbackBoard.id,
       fallbackSubject?.id,
@@ -86,17 +86,19 @@ export default function PdfViewerScreen() {
       params.subjectId,
       params.title,
       params.year,
-      storedPaper,
     ],
   );
-  const board = getBoard(paper.boardId) ?? fallbackBoard;
-  const subject = getSubjectById(paper.subjectId) ?? fallbackSubject;
   const netInfo = useNetInfo();
   const downloads = usePaperStackStore((state) => state.downloads);
-  const downloaded = downloads[paper.id];
+  const downloaded = downloads[paperId];
+  const paper = serverPaper ?? downloaded?.paperSnapshot ?? fallbackPaper;
+  const board = paper.board ?? getBoard(paper.boardId) ?? fallbackBoard;
+  const subject = paper.subject ?? getSubjectById(paper.subjectId) ?? fallbackSubject;
   const { isBookmarked, toggleBookmark } = useBookmark(paper.id);
   const { downloadState, progress, startDownload, cancelDownload } = useDownload(paper);
-  const [sourceUri, setSourceUri] = useState(downloaded?.localUri ?? paper.pdfUrl);
+  const pdfSource = downloaded?.localUri ?? paper.pdfUrl ?? null;
+  const [sourceUri, setSourceUri] = useState(pdfSource ?? "");
+  const { mutate: track } = useTrackAnalytics();
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,11 +108,20 @@ export default function PdfViewerScreen() {
   const [progressVisible, setProgressVisible] = useState(false);
   const offline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const resumeKey = `paper-stack:resume-page:${paper.id}`;
-  const title = `${subject?.name ?? paper.title} - ${paper.year} ${sessionLabels[paper.session ?? "annual"]} (${board.shortName})`;
+  const subjectTitle = subject?.name ?? paper.title;
+  const sessionLabel = sessionLabels[paper.session ?? "annual"];
+  const title = `${subjectTitle} - ${paper.year} ${sessionLabel} (${board.shortName})`;
+  const headerSubtitle = `Class ${paper.classLevel} | ${paper.year} ${sessionLabel} | ${board.shortName}`;
 
   useEffect(() => {
-    setSourceUri(downloaded?.localUri ?? paper.pdfUrl);
-  }, [downloaded?.localUri, paper.pdfUrl]);
+    if (paper?.id && serverPaper?.id) {
+      track({ paperId: paper.id, event: "view" });
+    }
+  }, [paper?.id, serverPaper?.id, track]);
+
+  useEffect(() => {
+    setSourceUri(pdfSource ?? "");
+  }, [pdfSource]);
 
   useEffect(() => {
     const updateHistory = async () => {
@@ -157,7 +168,7 @@ export default function PdfViewerScreen() {
   }, [downloadState]);
 
   const sharePaper = async () => {
-    const uri = downloaded?.localUri ?? paper.pdfUrl;
+    const uri = downloaded?.localUri ?? paper.pdfUrl ?? "";
     const available = await Sharing.isAvailableAsync();
 
     if (downloaded?.localUri && available) {
@@ -182,11 +193,21 @@ export default function PdfViewerScreen() {
     }
   };
 
-  if (offline && !downloaded) {
+  if (paperLoading && !downloaded) {
+    return (
+      <SafeAreaView className="flex-1 bg-background p-5 dark:bg-background-dark" edges={["top"]}>
+        <SkeletonLoader variant="paperCard" />
+      </SafeAreaView>
+    );
+  }
+
+  if ((offline && !downloaded) || !pdfSource) {
     return (
       <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
         <ViewerHeader
-          title={title}
+          title={subjectTitle}
+          subtitle={headerSubtitle}
+          accentColor={board.color}
           isBookmarked={isBookmarked}
           onToggleBookmark={() => toggleBookmark(paper)}
           onShare={sharePaper}
@@ -206,11 +227,42 @@ export default function PdfViewerScreen() {
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark" edges={["top"]}>
       <View className="flex-1">
         <ViewerHeader
-          title={title}
+          title={subjectTitle}
+          subtitle={headerSubtitle}
+          accentColor={board.color}
           isBookmarked={isBookmarked}
           onToggleBookmark={() => toggleBookmark(paper)}
           onShare={sharePaper}
         />
+        <View className="border-b border-border bg-background px-5 py-3 dark:border-border-dark dark:bg-background-dark">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <View
+              className="rounded-full px-3 py-1.5"
+              style={{ backgroundColor: `${board.color}18` }}
+            >
+              <Typography variant="caption" weight="semibold" style={{ color: board.color }}>
+                {board.shortName}
+              </Typography>
+            </View>
+            <View className="rounded-full bg-muted px-3 py-1.5 dark:bg-muted-dark">
+              <Typography variant="caption" weight="semibold">
+                Class {paper.classLevel}
+              </Typography>
+            </View>
+            <View className="rounded-full bg-muted px-3 py-1.5 dark:bg-muted-dark">
+              <Typography variant="caption" weight="semibold">
+                {paper.year} {sessionLabel}
+              </Typography>
+            </View>
+            {downloaded ? (
+              <View className="rounded-full bg-chart-3/20 px-3 py-1.5 dark:bg-chart-3-dark/20">
+                <Typography variant="caption" weight="semibold">
+                  Offline ready
+                </Typography>
+              </View>
+            ) : null}
+          </View>
+        </View>
         <View className="flex-1 bg-muted dark:bg-muted-dark">
           {loading ? (
             <View className="absolute inset-0 z-10 gap-4 bg-background p-5 dark:bg-background-dark">
@@ -230,6 +282,7 @@ export default function PdfViewerScreen() {
           ) : (
             <PdfDocument
               sourceUri={sourceUri}
+              accentColor={board.color}
               page={targetPage}
               scale={scale}
               onLoadComplete={(pages) => {
@@ -256,6 +309,7 @@ export default function PdfViewerScreen() {
         />
         <ViewerToolbar
           paper={paper}
+          accentColor={board.color}
           currentPage={currentPage}
           totalPages={totalPages}
           onZoomIn={() => setScale((value) => Math.min(2.5, value + 0.15))}

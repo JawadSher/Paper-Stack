@@ -12,11 +12,12 @@ import { usePaperStackStore } from "@/store";
 import { useDownload } from "@/hooks/useDownload";
 import type { Board, Paper } from "@/types";
 
-import { formatFileSize, getSubjectById, getViewerParams } from "./browseData";
+import { formatFileSize, getSubjectById } from "./browseData";
 
 interface PaperListItemProps {
   paper: Paper;
   board: Board;
+  accentColor?: string;
 }
 
 const sessionLabels: Record<NonNullable<Paper["session"]>, string> = {
@@ -25,7 +26,7 @@ const sessionLabels: Record<NonNullable<Paper["session"]>, string> = {
   model: "Model",
 };
 
-export function PaperListItem({ paper, board }: PaperListItemProps) {
+export function PaperListItem({ paper, board, accentColor = board.color }: PaperListItemProps) {
   const router = useRouter();
   const bookmarked = usePaperStackStore((state) => state.bookmarkedPapers.has(paper.id));
   const toggleBookmark = usePaperStackStore((state) => state.toggleBookmark);
@@ -34,14 +35,26 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
   const openPaper = () => {
     router.push({
       pathname: "/(stack)/viewer/[paperId]",
-      params: getViewerParams(paper, getSubjectById(paper.subjectId), board),
+      params: {
+        paperId: paper.id,
+        pdfUrl: paper.pdfUrl ?? undefined,
+        title: paper.title,
+        boardId: paper.boardId,
+        boardName: board.shortName,
+        subjectId: paper.subjectId,
+        subjectName: getSubjectById(paper.subjectId)?.name,
+        classLevel: String(paper.classLevel),
+        year: String(paper.year),
+        session: paper.session,
+        fileSizeBytes: paper.fileSizeBytes ? String(paper.fileSizeBytes) : undefined,
+      },
     } as never);
   };
 
   const sharePaper = async () => {
     const available = await Sharing.isAvailableAsync();
 
-    if (available) {
+    if (available && paper.pdfUrl) {
       await Sharing.shareAsync(paper.pdfUrl, { dialogTitle: paper.title });
     }
   };
@@ -65,10 +78,19 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
         accessibilityRole="button"
         onPress={openPaper}
         onLongPress={sharePaper}
-        className="flex-row items-center gap-3 rounded-lg border border-border bg-card p-4 active:opacity-90 dark:border-border-dark dark:bg-card-dark"
+        className="flex-row items-center gap-3 rounded-lg border bg-card p-4 active:opacity-90 dark:bg-card-dark"
+        style={{ borderColor: `${accentColor}66`, borderLeftColor: accentColor, borderLeftWidth: 5 }}
       >
-        <View className="w-16 items-center rounded-lg bg-muted px-2 py-3 dark:bg-muted-dark">
-          <Typography variant="heading3" weight="bold">
+        <View
+          className="w-20 items-center rounded-lg px-2 py-3"
+          style={{ backgroundColor: `${accentColor}18` }}
+        >
+          <Typography
+            variant="heading3"
+            weight="bold"
+            numberOfLines={1}
+            style={{ color: accentColor }}
+          >
             {paper.year}
           </Typography>
         </View>
@@ -94,8 +116,8 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
               className="h-8 w-8 items-center justify-center rounded-full bg-muted dark:bg-muted-dark"
             >
               <Bookmark
-                color={bookmarked ? colors.primary.light : colors.mutedForeground.light}
-                fill={bookmarked ? colors.primary.light : "transparent"}
+                color={bookmarked ? accentColor : colors.mutedForeground.light}
+                fill={bookmarked ? accentColor : "transparent"}
                 size={16}
               />
             </Pressable>
@@ -107,7 +129,7 @@ export function PaperListItem({ paper, board }: PaperListItemProps) {
             fileName={`${paper.title}.pdf`}
             onDownload={startDownload}
           />
-          <ChevronRight color={colors.mutedForeground.light} size={20} />
+          <ChevronRight color={accentColor} size={20} />
         </View>
       </Pressable>
     </Swipeable>
