@@ -1,4 +1,4 @@
-import { ExpoConfig } from "expo/config";
+import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
   name: "PaperStack",
@@ -8,6 +8,7 @@ const config: ExpoConfig = {
   icon: "./assets/images/icon.png",
   scheme: "paperstack",
   android: {
+    package: "com.devjawadsher.paperstack",
     scheme: "paperstack",
     intentFilters: [
       {
@@ -56,6 +57,9 @@ const config: ExpoConfig = {
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    eas: {
+      projectId: "33a3412e-1aec-4085-b0d1-9191cbe31b95",
+    },
   },
 };
 
