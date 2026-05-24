@@ -6,11 +6,19 @@
     "preview": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://benhfnsbaironfnksgga.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlbmhmbnNiYWlyb25mbmtzZ2dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzMyNzMsImV4cCI6MjA5NDg0OTI3M30.S4OwMh8t7thzPmLD9j-8gIq1KlnpJ181qL7OVvL0VB4"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://benhfnsbaironfnksgga.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlbmhmbnNiYWlyb25mbmtzZ2dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzMyNzMsImV4cCI6MjA5NDg0OTI3M30.S4OwMh8t7thzPmLD9j-8gIq1KlnpJ181qL7OVvL0VB4"
       }
     }
   }
