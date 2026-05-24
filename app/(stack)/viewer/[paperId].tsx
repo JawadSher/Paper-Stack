@@ -193,7 +193,7 @@ export default function PdfViewerScreen() {
     }
   };
 
-  if (paperLoading && !downloaded) {
+  if (paperLoading && !downloaded && !fallbackPaper.pdfUrl) {
     return (
       <SafeAreaView className="flex-1 bg-background p-5 dark:bg-background-dark" edges={["top"]}>
         <SkeletonLoader variant="paperCard" />

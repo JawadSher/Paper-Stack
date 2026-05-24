@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import type { ComponentType } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import { ExternalLink, FileText } from "lucide-react-native";
 
@@ -23,9 +23,10 @@ type NativePdfProps = {
   minScale: number;
   maxScale: number;
   trustAllCerts: boolean;
+  onLoadProgress?: (percent: number) => void;
   onLoadComplete: (pages: number) => void;
   onPageChanged: (page: number, pages: number) => void;
-  onError: () => void;
+  onError: (error: unknown) => void;
   style: { flex: number };
 };
 
@@ -36,8 +37,8 @@ export function PdfDocument({
   scale,
   onLoadComplete,
   onPageChanged,
-  onError,
 }: PdfDocumentProps) {
+  const [showExternalFallback, setShowExternalFallback] = useState(false);
   const NativePdf = useMemo(() => {
     if (Constants.appOwnership === "expo") {
       return null;
@@ -59,7 +60,22 @@ export function PdfDocument({
     }
   }, [NativePdf, onLoadComplete]);
 
-  if (!NativePdf) {
+  useEffect(() => {
+    setShowExternalFallback(false);
+
+    if (!NativePdf || !sourceUri) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowExternalFallback(true);
+      onLoadComplete(1);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [NativePdf, onLoadComplete, sourceUri]);
+
+  if (!NativePdf || showExternalFallback) {
     return (
       <View className="flex-1 items-center justify-center px-5 pb-36">
         <View className="w-full max-w-md items-center gap-5 rounded-lg border border-border bg-card p-6 dark:border-border-dark dark:bg-card-dark">
@@ -74,8 +90,8 @@ export function PdfDocument({
               Open PDF preview
             </Typography>
             <Typography variant="bodySmall" color="muted" align="center">
-              Expo Go cannot render the native PDF preview. Open the paper externally, or use a
-              development build for in-app reading.
+              The in-app PDF preview is taking too long to load. Open the paper externally, or
+              download it for offline reading.
             </Typography>
           </View>
           <Pressable
@@ -102,9 +118,20 @@ export function PdfDocument({
       minScale={0.7}
       maxScale={2.5}
       trustAllCerts={false}
-      onLoadComplete={onLoadComplete}
+      onLoadProgress={(percent) => {
+        if (percent > 0) {
+          setShowExternalFallback(false);
+        }
+      }}
+      onLoadComplete={(pages) => {
+        setShowExternalFallback(false);
+        onLoadComplete(pages);
+      }}
       onPageChanged={onPageChanged}
-      onError={onError}
+      onError={() => {
+        setShowExternalFallback(true);
+        onLoadComplete(1);
+      }}
       style={{ flex: 1 }}
     />
   );
