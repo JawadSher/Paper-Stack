@@ -1,6 +1,5 @@
-import type { ExpoConfig } from "expo/config";
-
-const config: ExpoConfig = {
+/** @type {import("expo/config").ExpoConfig} */
+const config = {
   name: "PaperStack",
   slug: "paper-stack",
   version: "1.0.0",
