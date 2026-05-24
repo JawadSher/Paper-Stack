@@ -21,17 +21,7 @@
 
 Paper Stack is a mobile-first past-paper library built with Expo Router and Supabase. It helps students browse education boards, choose a class and subject, open real PDF papers, search across published papers, bookmark important material, and keep downloaded files available offline.
 
-The app is designed around fast repeated use: board-based browsing, compact paper cards, subject-aware filtering, offline status handling, and a preview build that can be installed directly on Android.
-
-## Preview Build
-
-An Android preview APK is included in the repository:
-
-```text
-preview/paper-stack.apk
-```
-
-Install it on an Android device to test the current native build. The preview build uses native modules that Expo Go cannot fully exercise, including PDF rendering and filesystem behavior.
+The app is designed around fast repeated use: board-based browsing, compact paper cards, subject-aware filtering, offline status handling, and native builds that can exercise Android behavior beyond Expo Go.
 
 ## Features
 
@@ -99,8 +89,6 @@ paper-stack/
 |   `-- index.ts                # Server-aligned app types and mappers
 |-- constants/                  # Theme and offline fallback data
 |-- supabase/                   # SQL helpers
-|-- preview/
-|   `-- paper-stack.apk         # Android preview build
 `-- assets/images/
     `-- icon.png
 ```
@@ -242,7 +230,6 @@ android.package = com.devjawadsher.paperstack
 - Supabase credentials used by EAS must be available at build time because Expo public env values are bundled into the app.
 - `constants/boards.ts` and `constants/subjects.ts` are offline fallback data, not the primary source.
 - `constants/questions.ts` is deprecated reference data and should not be used by new screens.
-- `preview/paper-stack.apk` is a generated artifact for testers, not source code.
 
 ## Roadmap
 
